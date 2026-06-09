@@ -5,10 +5,6 @@ import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import gsap from "gsap"
 import { button } from "framer-motion/client";
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { OutlinePass } from 'three/addons/postprocessing/OutlinePass.js';
-
 
 
 const canvas = document.querySelector("#experience-canvas")
@@ -52,6 +48,9 @@ const showModal = (modal) => {
         playHoverAnimation(currentHoveredObject, false);
         currentHoveredObject = null;
     }
+
+    removeHighlight();
+
     document.body.style.cursor = "default";
     currentIntersects = [];
 
@@ -86,6 +85,14 @@ const pointer = new THREE.Vector2();
 const raycasterObjects = [];
 let currentIntersects = [];
 let currentHoveredObject = null;
+let currentHighlightObject = null;
+let currentHighlightMesh = null;
+
+//Day Night
+const themeObjects = [];
+let currentTheme = "day";
+let isThemeChanging = false;
+let atlasObject = null;
 
 //Socials
 const socialLinks = {
@@ -188,14 +195,59 @@ window.addEventListener("touchstart", (e) =>{
 window.addEventListener("touchend", (e) =>{
     if(isModalOpen) return
     e.preventDefault()
-    handleRaycasterInteraction
+    handleRaycasterInteraction();
 
 },{passive: false});
+
+
+function setTheme(theme) {
+    themeObjects.forEach((object) => {
+        const key = object.userData.textureKey;
+
+        if (!key) return;
+        if (!loadedTextures[theme][key]) return;
+        if (!object.material) return;
+
+        object.material.map = loadedTextures[theme][key];
+        object.material.needsUpdate = true;
+    });
+}
+
+function toggleDayNight(object) {
+    if (isThemeChanging) return;
+
+    isThemeChanging = true;
+
+    const nextTheme = currentTheme === "day" ? "night" : "day";
+    const spinTarget = atlasObject || object;
+
+    if (spinTarget) {
+        gsap.to(spinTarget.rotation, {
+            y: spinTarget.rotation.y + Math.PI * 2,
+            duration: 1.1,
+            ease: "power2.inOut"
+        });
+    }
+
+    gsap.delayedCall(0.45, () => {
+        setTheme(nextTheme);
+    });
+
+    gsap.delayedCall(1.1, () => {
+        currentTheme = nextTheme;
+        isThemeChanging = false;
+    });
+}
 
 
 function handleRaycasterInteraction(){
         if (currentIntersects.length > 0){
         const object = currentIntersects[0].object;
+
+        if(object.name.includes("Atlas")){
+            toggleDayNight(object);
+            return;
+        }
 
         Object.entries(socialLinks).forEach(([key, url]) =>{
             if (object.name.includes(key)){
@@ -232,6 +284,16 @@ loader.load("/models/CaptainRoomExportPortfolio-v1.glb", (glb)=>{
             }
 
             if (child.isMesh){
+                if(child.name.includes("Atlas")){
+                    atlasObject = child;
+
+                    if(!raycasterObjects.includes(child)){
+                        raycasterObjects.push(child);
+                    }
+                }
+            }
+
+            if (child.isMesh){
                 if(child.name.includes("Hover")){
                     child.userData.initialScale = new THREE.Vector3().copy(child.scale)
                     child.userData.initialPosition = new THREE.Vector3().copy(child.position)
@@ -247,6 +309,11 @@ loader.load("/models/CaptainRoomExportPortfolio-v1.glb", (glb)=>{
                     });
 
                     child.material = material;
+                    child.userData.textureKey = key;
+
+                    if(!themeObjects.includes(child)){
+                        themeObjects.push(child);
+                    }
 
                     if (child.material.map){
                         child.material.map.minFilter = THREE.LinearFilter;
@@ -277,6 +344,7 @@ loader.load("/models/CaptainRoomExportPortfolio-v1.glb", (glb)=>{
 });
 
 
+//Lock Oribital Controls
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(35, sizes.width / sizes.height, 0.1, 1000);
 camera.position.set(
@@ -291,6 +359,8 @@ const renderer = new THREE.WebGLRenderer({canvas:canvas, antialias: true});
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
+
+//Orbital Controls
 const controls = new OrbitControls( camera, renderer.domElement );
 
 controls.minDistance = 5;
@@ -299,20 +369,69 @@ controls.maxDistance = 20;
 controls.minPolarAngle = 0;
 controls.maxPolarAngle = Math.PI / 2;
 controls.minAzimuthAngle = Math.PI * 1.83;
-controls.maxAzimuthAngle = Math.PI / 5;
+controls.maxAzimuthAngle = Math.PI / 5.2;
  
 
 
 
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
-controls.update();
+
 controls.target.set(
     0.4999349138467539,
     1.0595564377570528,
-    1.5081876754084138);
+    1.5081876754084138
+);
 
+controls.update();
 
+const minPan = new THREE.Vector3(-1.2, 0.4, 0.2);
+const maxPan = new THREE.Vector3(2.2, 1.8, 2.8);
+const previousTarget = new THREE.Vector3();
+
+function clampControlsTarget() {
+    previousTarget.copy(controls.target);
+
+    controls.target.clamp(minPan, maxPan);
+
+    const delta = controls.target.clone().sub(previousTarget);
+    camera.position.add(delta);
+}
+
+function addHighlight(object) {
+    if (currentHighlightObject === object) return;
+
+    removeHighlight();
+
+    const highlightMaterial = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        side: THREE.BackSide,
+        transparent: true,
+        opacity: 1,
+        depthWrite: false
+    });
+
+    currentHighlightMesh = new THREE.Mesh(object.geometry, highlightMaterial);
+    currentHighlightMesh.name = "Highlight_Outline";
+    currentHighlightMesh.scale.set(1.06, 1.06, 1.06);
+    currentHighlightMesh.renderOrder = 999;
+
+    object.add(currentHighlightMesh);
+    currentHighlightObject = object;
+}
+
+function removeHighlight() {
+    if (currentHighlightObject && currentHighlightMesh) {
+        currentHighlightObject.remove(currentHighlightMesh);
+
+        if (currentHighlightMesh.material) {
+            currentHighlightMesh.material.dispose();
+        }
+    }
+
+    currentHighlightObject = null;
+    currentHighlightMesh = null;
+}
 
 window.addEventListener("resize",()=>{
     sizes.width = window.innerWidth
@@ -364,6 +483,7 @@ function playHoverAnimation (object, isHovering){
 
 const render = () => {
   controls.update();
+    clampControlsTarget();
 
 //   console.log(camera.position);
 //   console.log("000000000");
@@ -378,6 +498,12 @@ for (let i = 0; i < currentIntersects.length; i++){
 if(currentIntersects.length>0){
     const currentIntersectObject = currentIntersects[0].object
 
+    if(currentIntersectObject.name.includes("Highlight")){
+        addHighlight(currentIntersectObject);
+    }else{
+        removeHighlight();
+    }
+
     if(currentIntersectObject.name.includes("Hover")){
         if(currentIntersectObject !== currentHoveredObject){
 
@@ -391,13 +517,15 @@ if(currentIntersects.length>0){
         }
     }
 
-    if(currentIntersectObject.name.includes("Pointer")){
+    if(currentIntersectObject.name.includes("Pointer") || currentIntersectObject.name.includes("Atlas")){
         document.body.style.cursor = "pointer"
     }else{
         document.body.style.cursor = "default"
     }
     
 }else{
+    removeHighlight();
+
     if (currentHoveredObject) {
         playHoverAnimation(currentHoveredObject, false);
         currentHoveredObject = null;
