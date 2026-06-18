@@ -1,43 +1,1968 @@
-*{
+* {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
 
+
+@font-face {
+  font-family: "PortfolioFont";
+  src: url("/fonts/Script1RagerHevvyNormal-O2A8.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  font-family: "PortfolioFont", Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --ui-bg: #f2b1aa;
+  --ui-border: #c74543;
+  --ui-text: #8f2928;
+
+  /* Quick menu hover settings */
+  --quick-hover-scale: 1.2;
+  --quick-hover-rotation: -8deg;
+  --quick-hover-text-move: 7px;
+  --quick-hover-text-scale: 1.1;
+
+    /* default/day UI colors */
+  --ui-bg: #f2b1aa;
+  --ui-border: #c74543;
+  --ui-text: #8f2928;
 }
 
-#experience{
+/* Day UI colors */
+body[data-theme="day"] {
+  --ui-bg: #f2b1aa;
+  --ui-border: #c74543;
+  --ui-text: #8f2928;
+}
+
+/* Night UI colors */
+body[data-theme="night"] {
+  --ui-bg: #222a55;
+  --ui-border: #7a90cc;
+  --ui-text: #d7e0ff;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+body {
+  background: #111;
+}
+
+#root {
+  display: none;
+}
+
+#experience {
   position: fixed;
   height: 100%;
   width: 100%;
   top: 0;
   left: 0;
   overflow: hidden;
+  z-index: 1;
 
-  #experience-canvas{
+  #experience-canvas {
     height: 100%;
     width: 100%;
+    display: block;
   }
 }
 
+/* ----------------------------- */
+/* Bottom-left Quick Menu */
+/* ----------------------------- */
 
-//Modals
+.quick-menu {
+  position: fixed;
+  left: 26px;
+  bottom: 26px;
+  z-index: 5000;
+
+  pointer-events: auto;
+
+  font-family: "PortfolioFont", Inter, system-ui, sans-serif;
+}
+
+/* The action stack sits above the main toggle button */
+.quick-menu-actions {
+  position: absolute;
+  left: 0;
+  bottom: 74px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  pointer-events: none;
+}
+
+/* Each button starts hidden, slightly below, like it is tucked into the toggle */
+.quick-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  border: none;
+  background: transparent;
+
+  color: var(--ui-border);
+  font-family: "PortfolioFont", Inter, system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 900;
+
+  cursor: pointer;
+
+  opacity: 0;
+  transform: translateY(25px) scale(0.5) rotate(-0deg);
+  transform-origin: left bottom;
+
+  transition:
+    opacity 0.22s ease,
+    transform 0.34s cubic-bezier(0.2, 1.35, 0.35, 1);
+
+  pointer-events: none;
+}
+
+/* When open, buttons flick upward into place */
+.quick-menu.is-open .quick-menu-item {
+  opacity: 1;
+  transform: translateY(0) scale(1) rotate(0deg);
+  pointer-events: auto;
+}
+
+/* Opening cascade: bottom item appears first, then upward */
+.quick-menu.is-open .quick-menu-item:nth-child(5) {
+  transition-delay: 0s;
+}
+
+.quick-menu.is-open .quick-menu-item:nth-child(4) {
+  transition-delay: 0.045s;
+}
+
+.quick-menu.is-open .quick-menu-item:nth-child(3) {
+  transition-delay: 0.09s;
+}
+
+.quick-menu.is-open .quick-menu-item:nth-child(2) {
+  transition-delay: 0.135s;
+}
+
+.quick-menu.is-open .quick-menu-item:nth-child(1) {
+  transition-delay: 0.18s;
+}
+
+/* Closing cascade: top item disappears first, back down into the toggle */
+.quick-menu:not(.is-open) .quick-menu-item:nth-child(1) {
+  transition-delay: 0s;
+}
+
+.quick-menu:not(.is-open) .quick-menu-item:nth-child(2) {
+  transition-delay: 0.035s;
+}
+
+.quick-menu:not(.is-open) .quick-menu-item:nth-child(3) {
+  transition-delay: 0.07s;
+}
+
+.quick-menu:not(.is-open) .quick-menu-item:nth-child(4) {
+  transition-delay: 0.105s;
+}
+
+.quick-menu:not(.is-open) .quick-menu-item:nth-child(5) {
+  transition-delay: 0.14s;
+}
+
+.quick-icon-box,
+.quick-menu-toggle-button {
+  width: 58px;
+  height: 58px;
+
+  display: grid;
+  place-items: center;
+
+  border: 6px solid var(--ui-border);
+  border-radius: 16px;
+
+  background: var(--ui-bg);
+
+  transition:
+    transform 0.16s ease,
+    filter 0.16s ease,
+    background 0.16s ease;
+}
+
+.quick-icon-box img,
+.quick-menu-toggle-button img {
+  width: 33px;
+  height: 33px;
+  object-fit: contain;
+  display: block;
+}
+
+.quick-menu-item:hover .quick-icon-box {
+  transform: scale(var(--quick-hover-scale)) rotate(var(--quick-hover-rotation));
+  filter: brightness(1.2);
+}
+
+.quick-menu-item:hover .quick-label {
+  transform:
+    translateX(var(--quick-hover-text-move))
+    scale(var(--quick-hover-text-scale));
+  filter: brightness(1.2);
+}
+
+.quick-menu-toggle-button:hover {
+  transform: scale(var(--quick-hover-scale)) rotate(var(--quick-hover-rotation));
+  filter: brightness(1.2);
+}
+
+.quick-label {
+  color: var(--ui-border);
+  white-space: nowrap;
+  display: inline-block;
+
+  transition:
+  transform 0.16s ease,
+  filter 0.16s ease;
+
+  text-shadow:
+    0 2px 0 rgba(255, 220, 214, 0.35),
+    0 0 8px rgba(255, 220, 214, 0.35);
+}
+
+.quick-menu-toggle-button {
+  border: 6px solid var(--ui-border);
+  cursor: pointer;
+}
+
+/* Optional: give the toggle itself a little bounce when opened */
+.quick-menu.is-open .quick-menu-toggle-button {
+  transform: scale(1.04);
+}
+
+/* Selected button waits while the others collapse */
+.quick-menu.is-closing-choice:not(.is-open) .quick-menu-item.is-selected {
+  opacity: 1;
+  transform: translateY(0) scale(1) rotate(0deg);
+  pointer-events: none;
+  transition-delay: 0s;
+}
+
+/* Selected button click pop */
+.quick-menu-item.is-selected .quick-icon-box {
+  animation: quickSelectedPop 0.28s ease forwards;
+}
+
+@keyframes quickSelectedPop {
+  0% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  45% {
+    transform: scale(1.58) rotate(-4deg);
+  }
+
+  100% {
+    transform: scale(1.2) rotate(0deg);
+  }
+}
+
+/* After the others are gone, selected button leaves too */
+.quick-menu.is-closing-choice:not(.is-open) .quick-menu-item.is-selected.is-leaving {
+  opacity: 0;
+  transform: translateY(34px) scale(0.72) rotate(-8deg);
+  transition:
+    opacity 0.18s ease,
+    transform 0.24s ease-in;
+  transition-delay: 0s;
+}
+
+/* Hide the separate collapse button until menu is open */
+#quick-menu-collapse-button {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease,
+    filter 0.16s ease;
+}
+
+.quick-menu.is-open #quick-menu-collapse-button {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+/* ----------------------------- */
+/* Modal Base */
+/* ----------------------------- */
+
 .modal {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
-  font-size: 32px;
   z-index: 99999;
-  display: none;
-  background-color: black;
 
+  display: none;
+  opacity: 0;
+  pointer-events: auto;
+
+  transform: translate(-50%, -50%);
+
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+
+  -webkit-mask-position: center;
+  mask-position: center;
+
+  will-change: opacity, -webkit-mask-image, mask-image;
 }
+
+/* ----------------------------- */
+/* Main Simple Red Panels */
+/* ----------------------------- */
+
+.modal-card {
+  position: relative;
+
+  width: min(860px, 76vw);
+  max-height: min(680px, 78vh);
+
+  padding: 34px 38px 36px;
+
+  border-radius: 28px;
+  border: 8px solid var(--ui-border);
+
+  background: var(--ui-bg);
+  color: var(--ui-border);
+
+  overflow: visible;
+}
+
+.modal-content {
+  position: relative;
+  z-index: 2;
+}
+
+.modal-header {
+  position: relative;
+  margin-bottom: 22px;
+  text-align: center;
+  padding-left: 64px;
+  padding-right: 64px;
+}
+
+.modal-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 340px;
+  padding: 12px 36px;
+
+  border-radius: 999px;
+
+  background: var(--ui-border);
+  color: var(--ui-bg);
+
+  font-size: clamp(30px, 4vw, 46px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+.modal-subtitle {
+  max-width: 680px;
+  margin: 16px auto 0;
+
+  color: var(--ui-border);
+  font-size: 18px;
+  line-height: 1.45;
+  font-weight: 700;
+}
+
+.modal-scroll {
+  position: relative;
+  z-index: 2;
+
+  max-height: 470px;
+  overflow-y: auto;
+  padding: 4px 18px 8px 4px;
+}
+
+.modal-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modal-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border: 2px solid var(--ui-border);
+  border-radius: 999px;
+}
+
+.modal-scroll::-webkit-scrollbar-thumb {
+  background: var(--ui-border);
+  border-radius: 999px;
+}
+
+/* ----------------------------- */
+/* Close Button */
+/* ----------------------------- */
+
+.modal-exit-button {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  z-index: 10;
+
+  width: 58px;
+  height: 58px;
+
+  display: grid;
+  place-items: center;
+
+  border: 6px solid var(--ui-border);
+  border-radius: 16px;
+
+  background: var(--ui-bg);
+  color: var(--ui-border);
+
+  cursor: pointer;
+
+  transform: rotate(-10deg);
+
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.modal-exit-button::before,
+.modal-exit-button::after {
+  content: "";
+  position: absolute;
+
+  width: 32px;
+  height: 6px;
+
+  background: var(--ui-border);
+  border-radius: 999px;
+}
+
+.modal-exit-button::before {
+  transform: rotate(45deg);
+}
+
+.modal-exit-button::after {
+  transform: rotate(-45deg);
+}
+
+.modal-exit-button span {
+  display: none;
+}
+
+.modal-exit-button:hover {
+  transform: rotate(-5deg) scale(1.06);
+  background: var(--ui-border);
+}
+
+.modal-exit-button:hover::before,
+.modal-exit-button:hover::after {
+  background: var(--ui-bg);
+}
+
+/* ----------------------------- */
+/* Text / Info Blocks */
+/* ----------------------------- */
+
+.info-section {
+  margin-bottom: 26px;
+}
+
+.info-section h2 {
+  margin-bottom: 14px;
+
+  font-size: 28px;
+  color: var(--ui-border);
+  font-weight: 900;
+}
+
+.info-section p {
+  margin-bottom: 14px;
+
+  font-size: 19px;
+  line-height: 1.52;
+  color: var(--ui-border);
+  font-weight: 650;
+}
+
+.info-section ul {
+  display: grid;
+  gap: 12px;
+  margin-left: 24px;
+}
+
+.info-section li {
+  font-size: 18px;
+  line-height: 1.45;
+  color: var(--ui-border);
+  font-weight: 650;
+}
+
+.section-divider {
+  height: 3px;
+  width: 100%;
+
+  margin: 24px 0;
+
+  background: var(--ui-border);
+  border-radius: 999px;
+}
+
+/* ----------------------------- */
+/* About Me */
+/* ----------------------------- */
+
+.about-layout {
+  display: grid;
+  grid-template-columns: 230px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+.about-image {
+  min-height: 300px;
+
+  border-radius: 22px;
+  border: 6px solid var(--ui-border);
+
+  background: var(--ui-bg);
+
+  display: grid;
+  place-items: center;
+
+  color: var(--ui-border);
+  font-size: 26px;
+  font-weight: 900;
+
+  overflow: hidden;
+}
+
+.about-image img {
+  width: 100%;
+  height: 100%;
+  min-height: 300px;
+  object-fit: cover;
+  display: block;
+}
+
+.skill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.skill-pill {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 8px 13px;
+
+  border-radius: 999px;
+  border: 3px solid var(--ui-border);
+
+  background: var(--ui-bg);
+  color: var(--ui-border);
+
+  font-size: 14px;
+  font-weight: 900;
+}
+
+/* ----------------------------- */
+/* My Work / Pictures */
+/* ----------------------------- */
+
+.my-work-scroll {
+  max-height: 470px;
+  padding: 4px 18px 8px 4px;
+}
+
+.my-work-gallery {
+  column-count: 3;
+  column-gap: 18px;
+}
+
+.my-work-tile {
+  position: relative;
+
+  display: block;
+  width: 100%;
+  margin: 0 0 18px;
+
+  break-inside: avoid;
+
+  border: 6px solid var(--ui-border);
+  border-radius: 22px;
+
+  background: var(--ui-bg);
+
+  overflow: hidden;
+  cursor: pointer;
+
+  transform: translateY(0) scale(1) rotate(0deg);
+
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease,
+    background 0.18s ease;
+}
+
+.my-work-tile:hover {
+  transform: translateY(-8px) scale(1.025) rotate(-1deg);
+  filter: brightness(1.08);
+}
+
+.my-work-tile:nth-child(even):hover {
+  transform: translateY(-8px) scale(1.025) rotate(1deg);
+}
+
+.my-work-tile img {
+  display: block;
+  width: 100%;
+  height: auto;
+
+  object-fit: cover;
+}
+
+.my-work-inspector {
+  position: fixed;
+  inset: 0;
+  z-index: 120000;
+
+  display: none;
+  align-items: center;
+  justify-content: center;
+
+  padding: 86px 44px 44px;
+
+  background: rgba(19, 11, 16, 0.42);
+
+  pointer-events: auto;
+}
+
+.my-work-inspector.is-open {
+  display: flex;
+}
+
+.my-work-inspector-panel {
+  max-width: min(1120px, 88vw);
+  max-height: 84vh;
+
+  padding: 18px;
+
+  border: 8px solid var(--ui-border);
+  border-radius: 28px;
+
+  background: var(--ui-bg);
+
+  display: grid;
+  place-items: center;
+
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.22);
+}
+
+.my-work-inspector-panel img {
+  display: block;
+
+  max-width: 100%;
+  max-height: calc(84vh - 92px);
+
+  object-fit: contain;
+
+  border: 5px solid var(--ui-border);
+  border-radius: 20px;
+
+  background: #111;
+}
+
+.my-work-inspector-title {
+  margin-top: 12px;
+
+  color: var(--ui-border);
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1.1;
+  text-align: center;
+}
+
+.my-work-inspector-close {
+  position: fixed;
+  top: 26px;
+  left: 26px;
+  z-index: 120010;
+
+  width: 58px;
+  height: 58px;
+
+  display: grid;
+  place-items: center;
+
+  border: 6px solid var(--ui-border);
+  border-radius: 16px;
+
+  background: var(--ui-bg);
+  color: var(--ui-border);
+
+  cursor: pointer;
+
+  transform: rotate(-10deg);
+
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease,
+    filter 0.18s ease;
+}
+
+.my-work-inspector-close::before,
+.my-work-inspector-close::after {
+  content: "";
+  position: absolute;
+
+  width: 32px;
+  height: 6px;
+
+  background: var(--ui-border);
+  border-radius: 999px;
+}
+
+.my-work-inspector-close::before {
+  transform: rotate(45deg);
+}
+
+.my-work-inspector-close::after {
+  transform: rotate(-45deg);
+}
+
+.my-work-inspector-close span {
+  display: none;
+}
+
+.my-work-inspector-close:hover {
+  transform: rotate(-5deg) scale(1.06);
+  background: var(--ui-border);
+  filter: brightness(1.08);
+}
+
+.my-work-inspector-close:hover::before,
+.my-work-inspector-close:hover::after {
+  background: var(--ui-bg);
+}
+
+/* ----------------------------- */
+/* Contact Modal */
+/* ----------------------------- */
+
+.contact-card {
+  position: relative;
+
+  width: min(640px, 72vw);
+
+  padding: 34px 34px 30px;
+
+  border-radius: 28px;
+  border: 8px solid var(--ui-border);
+
+  background: var(--ui-bg);
+  color: var(--ui-border);
+}
+
+.contact-close {
+  top: 16px;
+  left: 16px;
+}
+
+.contact-title {
+  margin-bottom: 26px;
+  padding-left: 0px;
+
+  color: var(--ui-border);
+  font-size: 34px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.contact-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
+.contact-link {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+
+  color: var(--ui-border);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.contact-icon {
+  width: 64px;
+  height: 64px;
+
+  display: grid;
+  place-items: center;
+
+  border: 6px solid var(--ui-border);
+  border-radius: 18px;
+
+  background: var(--ui-bg);
+
+  transition:
+    transform 0.16s ease,
+    filter 0.16s ease,
+    background 0.16s ease;
+}
+
+.contact-icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+  display: block;
+}
+
+.contact-link > span:last-child {
+  display: inline-block;
+
+  color: var(--ui-border);
+
+  transition:
+    transform 0.16s ease,
+    filter 0.16s ease;
+
+  text-shadow:
+    0 2px 0 rgba(255, 220, 214, 0.35),
+    0 0 8px rgba(255, 220, 214, 0.35);
+}
+
+/* Same movement feel as the bottom-left quick menu */
+.contact-link:hover .contact-icon {
+  transform: scale(var(--quick-hover-scale)) rotate(var(--quick-hover-rotation));
+  filter: brightness(1.2);
+}
+
+.contact-link:hover > span:last-child {
+  transform:
+    translateY(var(--quick-hover-text-move))
+    scale(var(--quick-hover-text-scale));
+
+  filter: brightness(1.2);
+}
+
+/* Make alternating icons rotate the other way so the contact menu feels lively */
+.contact-link:nth-child(even):hover .contact-icon {
+  transform: scale(var(--quick-hover-scale)) rotate(calc(var(--quick-hover-rotation) * -1));
+}
+
+.contact-link:nth-child(even):hover > span:last-child {
+  transform:
+    translateY(var(--quick-hover-text-move))
+    scale(var(--quick-hover-text-scale));
+}
+
+/* ----------------------------- */
+/* Extra Modal - No Background */
+/* ----------------------------- */
+
+.extra {
+  width: min(760px, 72vw);
+  height: min(420px, 52vh);
+}
+
+.extra .modal-exit-button {
+  top: -80px;
+  left: 50%;
+  transform: translateX(-50%) rotate(-10deg);
+}
+
+.extra .modal-exit-button:hover {
+  transform: translateX(-50%) rotate(-5deg) scale(1.06);
+}
+
+.extra-envelope-wrap {
+  position: relative;
+
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(42px, 8vw, 110px);
+}
+
+.doc-envelope {
+  position: relative;
+
+  display: block;
+  width: 280px;
+  height: 190px;
+
+  text-decoration: none;
+  color: #2f1613;
+
+  transform: rotate(-4deg);
+
+  transition:
+    transform 0.2s ease,
+    filter 0.2s ease;
+}
+
+.doc-envelope.cv {
+  width: 250px;
+  height: 170px;
+
+  transform: rotate(5deg);
+}
+
+.doc-envelope:hover {
+  transform: translateY(-12px) rotate(-1deg) scale(1.04);
+  filter: brightness(1.08);
+}
+
+.doc-envelope.cv:hover {
+  transform: translateY(-12px) rotate(2deg) scale(1.04);
+}
+
+.envelope-paper {
+  position: absolute;
+  left: 50%;
+  bottom: 56px;
+  z-index: 1;
+
+  width: 62%;
+  height: 92%;
+
+  transform: translateX(-50%) rotate(-6deg);
+
+  border: 5px solid #2f1613;
+  border-radius: 5px;
+
+  background: #ffe6b8;
+}
+
+.doc-envelope.cv .envelope-paper {
+  bottom: 48px;
+  width: 58%;
+  height: 88%;
+  transform: translateX(-50%) rotate(6deg);
+}
+
+.envelope-paper h3 {
+  margin: 18px 18px 10px;
+
+  color: #2f1613;
+  font-size: 34px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.doc-envelope.cv .envelope-paper h3 {
+  text-align: center;
+  font-size: 32px;
+}
+
+.paper-bullet {
+  position: relative;
+
+  display: block;
+  height: 4px;
+
+  margin: 12px 24px 12px 44px;
+
+  background: rgba(47, 22, 19, 0.78);
+  border-radius: 999px;
+}
+
+.paper-bullet::before {
+  content: "";
+  position: absolute;
+  left: -20px;
+  top: -3px;
+
+  width: 10px;
+  height: 10px;
+
+  border-radius: 50%;
+  background: #2f1613;
+}
+
+.envelope-body {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  z-index: 2;
+
+  width: 100%;
+  height: 70%;
+
+  border: 6px solid #2f1613;
+
+  background: #507db5;
+
+  clip-path: polygon(
+    0% 0%,
+    50% 46%,
+    100% 0%,
+    100% 100%,
+    0% 100%
+  );
+}
+
+.doc-envelope.cv .envelope-body {
+  background: #d84f47;
+}
+
+.envelope-fold-left,
+.envelope-fold-right {
+  position: absolute;
+  bottom: 0;
+  z-index: 3;
+
+  width: 50%;
+  height: 70%;
+
+  pointer-events: none;
+}
+
+.envelope-fold-left {
+  left: 0;
+
+  border-right: 4px solid rgba(47, 22, 19, 0.78);
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.envelope-fold-right {
+  right: 0;
+
+  border-left: 4px solid rgba(47, 22, 19, 0.78);
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+
+.envelope-seal {
+  position: absolute;
+  left: 50%;
+  bottom: 52px;
+  z-index: 4;
+
+  width: 56px;
+  height: 56px;
+
+  transform: translateX(-50%);
+
+  border-radius: 50%;
+  border: 5px solid #2f1613;
+
+  background: #7aa5d6;
+}
+
+.doc-envelope.cv .envelope-seal {
+  bottom: 46px;
+  width: 50px;
+  height: 50px;
+  background: #ef6257;
+}
+
+.envelope-label {
+  position: absolute;
+  left: 50%;
+  bottom: -44px;
+
+  transform: translateX(-50%);
+
+  padding: 8px 16px;
+
+  border-radius: 999px;
+  border: 4px solid var(--ui-border);
+
+  background: var(--ui-bg);
+  color: var(--ui-border);
+
+  font-size: 18px;
+  font-weight: 900;
+
+  white-space: nowrap;
+}
+
+/* ----------------------------- */
+/* Responsive */
+/* ----------------------------- */
+
+@media (max-width: 760px) {
+  .quick-menu {
+    left: 18px;
+    bottom: 18px;
+  }
+
+  .quick-icon-box,
+  .quick-small-button {
+    width: 52px;
+    height: 52px;
+  }
+
+  .quick-icon-box img,
+  .quick-small-button img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .quick-label {
+    font-size: 15px;
+  }
+
+  .modal-card {
+    width: 88vw;
+    max-height: 78vh;
+    padding: 28px 24px;
+  }
+
+  .my-work-gallery {
+    column-count: 2;
+    column-gap: 14px;
+  }
+
+  .my-work-tile {
+    margin-bottom: 14px;
+    border-width: 5px;
+    border-radius: 18px;
+  }
+
+  .my-work-inspector {
+    padding: 82px 18px 28px;
+  }
+
+  .my-work-inspector-panel {
+    max-width: 94vw;
+    padding: 12px;
+    border-width: 6px;
+  }
+
+  .my-work-inspector-title {
+    font-size: 20px;
+  }
+
+  .modal-header {
+    padding-left: 54px;
+    padding-right: 0;
+  }
+
+  .modal-title {
+    min-width: 0;
+    width: 100%;
+    font-size: 30px;
+  }
+
+  .modal-scroll {
+    max-height: 54vh;
+  }
+
+  .about-layout,
+  .work-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-exit-button {
+    width: 52px;
+    height: 52px;
+    top: 14px;
+    left: 14px;
+  }
+
+  .modal-exit-button::before,
+  .modal-exit-button::after {
+    width: 28px;
+  }
+
+  .contact-card {
+    width: 88vw;
+  }
+
+  .extra {
+    width: 90vw;
+    height: 62vh;
+  }
+
+  .extra-envelope-wrap {
+    flex-direction: column;
+    gap: 74px;
+  }
+
+  .doc-envelope,
+  .doc-envelope.cv {
+    width: 230px;
+    height: 155px;
+  }
+}
+
+/* ----------------------------- */
+/* 3D Resume / CV Envelope Mode */
+/* ----------------------------- */
+
+/* The Extra modal becomes a transparent overlay.
+   It only exists so we can keep the close button. */
+.extra.modal {
+  width: 100vw;
+  height: 100vh;
+
+  pointer-events: none;
+  background: transparent;
+}
+
+/* Hide old HTML envelopes if they are still in the HTML by mistake */
+.extra-envelope-wrap {
+  display: none;
+}
+
+/* Only the close button should receive clicks */
+.extra.modal .modal-exit-button {
+  pointer-events: auto;
+
+  top: 34px;
+  left: 50%;
+
+  transform: translateX(-50%) rotate(-10deg);
+}
+
+.extra.modal .modal-exit-button:hover {
+  transform: translateX(-50%) rotate(-5deg) scale(1.06);
+}
+
+
+/* ----------------------------- */
+/* 3D Resume / CV Focus Mode */
+/* ----------------------------- */
+
+/*
+  Change these to move the close button for the Resume/CV map view.
+
+  top:    moves it up/down
+  left:   moves it left/right
+*/
+:root {
+  --extra-close-top: 120px;
+  --extra-close-left: 25%;
+  --extra-close-translate-x: -50%;
+}
+
+/* Extra modal is transparent.
+   It only exists so we can keep the close button while viewing the 3D envelopes. */
+.extra.modal {
+  width: 100vw;
+  height: 100vh;
+
+  pointer-events: none;
+  background: transparent;
+}
+
+/* Hide old HTML envelopes if they are still in the HTML by mistake */
+.extra-envelope-wrap {
+  display: none !important;
+}
+
+/* This is the close button for the 3D Resume/CV focused view */
+.extra.modal .modal-exit-button {
+  pointer-events: auto;
+
+  top: var(--extra-close-top);
+  left: var(--extra-close-left);
+
+  transform: translateX(var(--extra-close-translate-x)) rotate(-10deg);
+}
+
+.extra.modal .modal-exit-button:hover {
+  transform: translateX(var(--extra-close-translate-x)) rotate(-5deg) scale(1.06);
+}
+
+/* ----------------------------- */
+/* 3D Resume / CV Focus Mode */
+/* ----------------------------- */
+
+/*
+  Move the close button for the Resume/CV map view here.
+
+  top:  moves it up/down
+  left: moves it left/right
+*/
+:root {
+  --extra-close-top: 125px;
+  --extra-close-left: 25%;
+  --extra-close-translate-x: -50%;
+}
+
+/* Extra modal is transparent.
+   It only exists so we can keep the close button while viewing the 3D envelopes. */
+.extra.modal {
+  width: 100vw;
+  height: 100vh;
+
+  pointer-events: none;
+  background: transparent;
+}
+
+/* Hide old HTML envelopes if they are still in the HTML */
+.extra-envelope-wrap {
+  display: none !important;
+}
+
+/* Close button for the 3D Resume/CV focused view */
+.extra.modal .modal-exit-button {
+  pointer-events: auto;
+
+  top: var(--extra-close-top);
+  left: var(--extra-close-left);
+
+  transform: translateX(var(--extra-close-translate-x)) rotate(-10deg);
+}
+
+.extra.modal .modal-exit-button:hover {
+  transform: translateX(var(--extra-close-translate-x)) rotate(-5deg) scale(1.06);
+}
+
+/* ----------------------------- */
+/* Document Image Viewer Overlay */
+/* ----------------------------- */
+
+.document-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 120000;
+
+  display: none;
+  opacity: 0;
+  pointer-events: none;
+
+  padding: 34px;
+
+  background: rgba(0, 0, 0, 0.34);
+
+  transition: opacity 0.18s ease;
+}
+
+.document-viewer.is-open {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.document-viewer-panel {
+  position: relative;
+
+  width: min(980px, 86vw);
+  height: min(720px, 84vh);
+
+  margin: 0 auto;
+
+  border-radius: 28px;
+  border: 8px solid var(--ui-border);
+
+  background: var(--ui-bg);
+  color: var(--ui-border);
+
+  overflow: hidden;
+}
+
+.document-viewer-header {
+  height: 82px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+
+  padding: 16px 24px 16px 92px;
+
+  border-bottom: 6px solid var(--ui-border);
+}
+
+.document-viewer-header h2 {
+  font-size: 34px;
+  font-weight: 900;
+  color: var(--ui-border);
+}
+
+.document-viewer-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.document-action-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 38px;
+  padding: 0 16px;
+
+  border-radius: 12px;
+  border: 4px solid var(--ui-border);
+
+  background: var(--ui-bg);
+  color: var(--ui-border);
+
+  text-decoration: none;
+  font-size: 17px;
+  font-weight: 900;
+
+  transition:
+    transform 0.16s ease,
+    background 0.16s ease,
+    color 0.16s ease;
+}
+
+.document-action-button:hover {
+  transform: translateY(-2px);
+  background: var(--ui-border);
+  color: var(--ui-bg);
+}
+
+.document-preview-scroll {
+  width: 100%;
+  height: calc(100% - 82px);
+
+  overflow: auto;
+
+  background: #292929;
+}
+
+.document-preview-scroll::-webkit-scrollbar {
+  width: 12px;
+}
+
+.document-preview-scroll::-webkit-scrollbar-track {
+  background: transparent;
+  border-left: 4px solid var(--ui-border);
+}
+
+.document-preview-scroll::-webkit-scrollbar-thumb {
+  background: var(--ui-border);
+  border-radius: 999px;
+}
+
+.document-preview-image {
+  display: block;
+
+  width: 85%;
+  height: auto;
+
+    margin: 28px auto;
+
+  background: white;
+}
+
+/* Top-left X button inside the document viewer */
+.document-viewer-close-button {
+  position: absolute;
+  top: 14px;
+  left: 16px;
+  z-index: 5;
+
+  width: 54px;
+  height: 54px;
+
+  display: grid;
+  place-items: center;
+
+  border: 6px solid var(--ui-border);
+  border-radius: 16px;
+
+  background: var(--ui-bg);
+  color: var(--ui-border);
+
+  cursor: pointer;
+
+  transform: rotate(-10deg);
+
+  transition:
+    transform 0.18s ease,
+    background 0.18s ease;
+}
+
+.document-viewer-close-button::before,
+.document-viewer-close-button::after {
+  content: "";
+  position: absolute;
+
+  width: 30px;
+  height: 6px;
+
+  background: var(--ui-border);
+  border-radius: 999px;
+}
+
+.document-viewer-close-button::before {
+  transform: rotate(45deg);
+}
+
+.document-viewer-close-button::after {
+  transform: rotate(-45deg);
+}
+
+.document-viewer-close-button span {
+  display: none;
+}
+
+.document-viewer-close-button:hover {
+  transform: rotate(-5deg) scale(1.06);
+  background: var(--ui-border);
+}
+
+.document-viewer-close-button:hover::before,
+.document-viewer-close-button:hover::after {
+  background: var(--ui-bg);
+}
+
+@media (max-width: 760px) {
+  .document-viewer {
+    padding: 18px;
+  }
+
+  .document-viewer-panel {
+    width: 94vw;
+    height: 86vh;
+  }
+
+  .document-viewer-header {
+    height: auto;
+    min-height: 110px;
+
+    align-items: flex-start;
+    flex-direction: column;
+
+    padding: 76px 18px 16px;
+  }
+
+  .document-viewer-header h2 {
+    font-size: 28px;
+  }
+
+  .document-preview-scroll {
+    height: calc(100% - 128px);
+  }
+}
+
+/* ----------------------------- */
+/* Bottom-left Audio Drop-Up Menu */
+/* ----------------------------- */
+
+.audio-menu {
+  position: absolute;
+  left: 74px;
+  bottom: 0;
+  z-index: 5001;
+
+  pointer-events: auto;
+
+  font-family: "PortfolioFont", Inter, system-ui, sans-serif;
+}
+
+.audio-menu-actions {
+  position: absolute;
+  left: 0;
+  bottom: 74px;
+
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  pointer-events: none;
+}
+
+.audio-control-card {
+  width: 260px;
+  min-height: 58px;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  border: 6px solid var(--ui-border);
+  border-radius: 16px;
+
+  background: var(--ui-bg);
+  color: var(--ui-border);
+
+  font-family: "PortfolioFont", Inter, system-ui, sans-serif;
+  font-weight: 900;
+
+  opacity: 0;
+  transform: translateY(25px) scale(0.5) rotate(-0deg);
+  transform-origin: left bottom;
+
+  transition:
+    opacity 0.22s ease,
+    transform 0.34s cubic-bezier(0.2, 1.35, 0.35, 1),
+    filter 0.16s ease,
+    background 0.16s ease;
+
+  pointer-events: none;
+}
+
+.audio-menu.is-open .audio-control-card {
+  opacity: 1;
+  transform: translateY(0) scale(1) rotate(0deg);
+  pointer-events: auto;
+}
+
+/* Same bottom-first opening feel as the main quick menu */
+.audio-menu.is-open .audio-control-card:nth-child(5) {
+  transition-delay: 0s;
+}
+
+.audio-menu.is-open .audio-control-card:nth-child(4) {
+  transition-delay: 0.045s;
+}
+
+.audio-menu.is-open .audio-control-card:nth-child(3) {
+  transition-delay: 0.09s;
+}
+
+.audio-menu.is-open .audio-control-card:nth-child(2) {
+  transition-delay: 0.135s;
+}
+
+.audio-menu.is-open .audio-control-card:nth-child(1) {
+  transition-delay: 0.18s;
+}
+
+.audio-menu:not(.is-open) .audio-control-card:nth-child(1) {
+  transition-delay: 0s;
+}
+
+.audio-menu:not(.is-open) .audio-control-card:nth-child(2) {
+  transition-delay: 0.035s;
+}
+
+.audio-menu:not(.is-open) .audio-control-card:nth-child(3) {
+  transition-delay: 0.07s;
+}
+
+.audio-menu:not(.is-open) .audio-control-card:nth-child(4) {
+  transition-delay: 0.105s;
+}
+
+.audio-menu:not(.is-open) .audio-control-card:nth-child(5) {
+  transition-delay: 0.14s;
+}
+
+.audio-menu-toggle-button {
+  width: 58px;
+  height: 58px;
+
+  display: grid;
+  place-items: center;
+
+  border: 6px solid var(--ui-border);
+  border-radius: 16px;
+
+  background: var(--ui-bg);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.16s ease,
+    filter 0.16s ease,
+    background 0.16s ease;
+}
+
+.audio-menu-toggle-button img {
+  width: 33px;
+  height: 33px;
+  object-fit: contain;
+  display: block;
+}
+
+.audio-menu-toggle-button:hover {
+  transform: scale(var(--quick-hover-scale)) rotate(var(--quick-hover-rotation));
+  filter: brightness(1.2);
+}
+
+.audio-menu.is-open .audio-menu-toggle-button {
+  transform: scale(1.04);
+}
+
+.audio-menu-toggle-button.is-muted {
+  transform: scale(0.96);
+}
+
+.audio-menu-toggle-button.is-muted:hover {
+  transform: scale(var(--quick-hover-scale)) rotate(calc(var(--quick-hover-rotation) * -1));
+}
+
+.audio-now-playing-card {
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 8px 12px;
+}
+
+.audio-control-title,
+.audio-slider-label {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.audio-track-name {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  font-size: 14px;
+  line-height: 1.2;
+  opacity: 0.9;
+}
+
+.audio-slider-card {
+  justify-content: space-between;
+  padding: 0 12px;
+}
+
+.audio-volume-slider {
+  width: 130px;
+  accent-color: var(--ui-border);
+  cursor: pointer;
+}
+
+.audio-transport-card {
+  justify-content: center;
+  padding: 0 10px;
+}
+
+.audio-control-button {
+  width: 48px;
+  height: 42px;
+
+  display: grid;
+  place-items: center;
+
+  border: 4px solid var(--ui-border);
+  border-radius: 12px;
+
+  background: var(--ui-bg);
+  color: var(--ui-border);
+
+  cursor: pointer;
+
+  transition:
+    transform 0.16s ease,
+    filter 0.16s ease,
+    background 0.16s ease;
+}
+
+.audio-control-button:hover {
+  transform: scale(1.12) rotate(var(--quick-hover-rotation));
+  filter: brightness(1.2);
+}
+
+.audio-control-button:nth-child(even):hover {
+  transform: scale(1.12) rotate(calc(var(--quick-hover-rotation) * -1));
+}
+
+.audio-placeholder-icon {
+  display: inline-block;
+  font-size: 21px;
+  line-height: 1;
+}
+
+.audio-mute-card {
+  justify-content: center;
+  padding: 0 12px;
+  gap: 12px;
+
+  cursor: pointer;
+}
+
+.audio-mute-control-icon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  display: block;
+  flex: 0 0 auto;
+}
+
+#audio-mute-control-label {
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.audio-mute-card:hover {
+  transform: translateY(0) scale(1.04) rotate(-2deg);
+  filter: brightness(1.2);
+}
+
+.audio-mute-card.is-muted {
+  opacity: 0.92;
+}
+
+@media (max-width: 760px) {
+  .audio-menu {
+    left: 64px;
+  }
+
+  .audio-menu-toggle-button {
+    width: 52px;
+    height: 52px;
+  }
+
+  .audio-menu-toggle-button img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .audio-menu-actions {
+    bottom: 66px;
+  }
+
+  .audio-control-card {
+    width: 232px;
+    min-height: 52px;
+  }
+
+  .audio-volume-slider {
+    width: 112px;
+  }
+
+  .audio-mute-control-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  #audio-mute-control-label {
+    font-size: 22px;
+  }
+}
+
+
+@media (max-width: 520px) {
+  .my-work-gallery {
+    column-count: 1;
+  }
+}
+
+/* ----------------------------- */
+/* My Work Scroll / Cut-off Fix */
+/* ----------------------------- */
+/*
+  Keeps the My Work panel inside the viewport and lets only the collage area scroll.
+  This stops the image tiles and scrollbar from being clipped by the bottom of the screen.
+*/
+.pictures .modal-card {
+  height: min(720px, 82vh);
+  max-height: 82vh;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.pictures .modal-content {
+  height: 100%;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.pictures .modal-header {
+  flex: 0 0 auto;
+  margin-bottom: 18px;
+}
+
+.pictures .my-work-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding: 8px 30px 32px 4px;
+  scrollbar-gutter: stable;
+}
+
+.pictures .my-work-gallery {
+  padding-bottom: 18px;
+}
+
+.pictures .my-work-tile {
+  overflow: hidden;
+}
+
+/* Gives the scrollbar a little room so it does not look cut into the panel edge. */
+.pictures .my-work-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.pictures .my-work-scroll::-webkit-scrollbar-track {
+  margin-block: 4px 14px;
+}
+
+@media (max-width: 760px) {
+  .pictures .modal-card {
+    height: min(720px, 84vh);
+    max-height: 84vh;
+  }
+
+  .pictures .my-work-scroll {
+    padding-right: 22px;
+    padding-bottom: 28px;
+  }
+}
+
+/* ----------------------------- */
+/* Audio Menu Muted Button Close Fix */
+/* ----------------------------- */
+/*
+  Fixes the "Mute All Audio" card staying visible after closing the audio menu.
+  The muted state was overriding the closed menu opacity.
+*/
+
+.audio-menu:not(.is-open) .audio-control-card,
+.audio-menu:not(.is-open) .audio-mute-card.is-muted {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.audio-menu.is-open .audio-mute-card.is-muted {
+  opacity: 0.92;
+}
+
