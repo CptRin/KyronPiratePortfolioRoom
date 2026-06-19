@@ -1844,6 +1844,22 @@ function setUITheme(theme) {
     updateAudioMuteIcon();
 }
 
+function shouldOpenMyWorkFromSceneObject(object) {
+    if (!object || !object.name) return false;
+
+    const myWorkOpenNames = [
+        "M_Text_BackGround",
+        "Y_Text_BackGround",
+        "W_Text_BackGround",
+        "O_Text_BackGround",
+        "R_Text_BackGround",
+        "K_Text_BackGround",
+        "Shelf_First_RayCast_Pointer",
+    ];
+
+    return myWorkOpenNames.some((namePart) => object.name.includes(namePart));
+}
+
 function handleRaycasterInteraction() {
     if (isDocumentViewerOpen || isMyWorkInspectorOpen) return;
     if (!isRaycastEnabled || (isModalOpen && !isExtraEnvelopeMode)) return;
@@ -1879,6 +1895,12 @@ function handleRaycasterInteraction() {
     if (isExtraEnvelopeObject(object)) {
         return;
     }
+
+    if (shouldOpenMyWorkFromSceneObject(object)) {
+        playClickSFX();
+        showModalWithCamera(modals.pictures, "pictures");
+        return;
+}
 
     Object.entries(socialLinks).forEach(([key, url]) => {
         if (object.name.includes(key)) {
