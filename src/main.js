@@ -8,6 +8,8 @@ import { button } from "framer-motion/client";
 import { createGodRays } from "./GodRays.js";
 import { inject } from "@vercel/analytics";
 
+inject();
+
 
 
 const canvas = document.querySelector("#experience-canvas")
