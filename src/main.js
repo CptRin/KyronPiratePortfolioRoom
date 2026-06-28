@@ -6,6 +6,7 @@ import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import gsap from "gsap"
 import { button } from "framer-motion/client";
 import { createGodRays } from "./GodRays.js";
+import { inject } from "@vercel/analytics";
 
 
 
