@@ -4,7 +4,6 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import gsap from "gsap"
-import { button } from "framer-motion/client";
 import { createGodRays } from "./GodRays.js";
 import { inject } from "@vercel/analytics";
 
@@ -17,6 +16,62 @@ const sizes = {
     width: window.innerWidth,
     height: window.innerHeight
 };
+
+// -----------------------------
+// Mobile / Touch Controls
+// -----------------------------
+// Based on the same mobile approach as sooahs-room-folio:
+// - use separate mobile camera views
+// - use touch/pointer taps instead of raw click-only scene picking
+// - keep HTML UI scrolling separate from the Three.js canvas
+const mobileMediaQuery = window.matchMedia("(pointer: coarse)");
+
+function isMobileDevice() {
+    return mobileMediaQuery.matches || window.innerWidth < 768;
+}
+
+function isPortraitMobile() {
+    return isMobileDevice() && window.innerHeight > window.innerWidth;
+}
+
+function getCanvasPointerPosition(event) {
+    const rect = canvas.getBoundingClientRect();
+    const clientX = event.clientX ?? event.touches?.[0]?.clientX ?? 0;
+    const clientY = event.clientY ?? event.touches?.[0]?.clientY ?? 0;
+
+    return {
+        x: ((clientX - rect.left) / rect.width) * 2 - 1,
+        y: -((clientY - rect.top) / rect.height) * 2 + 1,
+        clientX,
+        clientY,
+    };
+}
+
+function updatePointerFromEvent(event) {
+    const nextPointer = getCanvasPointerPosition(event);
+    pointer.x = nextPointer.x;
+    pointer.y = nextPointer.y;
+
+    return nextPointer;
+}
+
+function isUIInteractionTarget(event) {
+    if (!event.target || typeof event.target.closest !== "function") return false;
+
+    return Boolean(event.target.closest(
+        ".modal, .document-viewer, .my-work-inspector, .quick-menu, .audio-menu, .rotate-phone-message"
+    ));
+}
+
+function setCanvasPointerMode(isUIOpen, allowSceneTaps = false) {
+    document.body.classList.toggle("ui-open", Boolean(isUIOpen));
+    document.body.classList.toggle("extra-3d-mode", Boolean(allowSceneTaps));
+
+    if (!canvas) return;
+
+    canvas.style.pointerEvents = isUIOpen && !allowSceneTaps ? "none" : "auto";
+}
+
 
 // -----------------------------
 // My Work Auto Gallery
@@ -664,6 +719,28 @@ const cameraModalViews = {
     },
 };
 
+const mobileCameraModalViews = {
+    aboutme: {
+        position: new THREE.Vector3(1.35, 4.35, 7.2),
+        target: new THREE.Vector3(4.325945135570619, 2.5121377566096768, 1.915473975754205),
+        duration: 1.15,
+    },
+    extra: {
+        position: new THREE.Vector3(0.1, 4.35, 5.7),
+        target: new THREE.Vector3(0.10898369422413885, 0.49635360535240164, 3.1200116693729023),
+        duration: 1.15,
+    },
+};
+
+function getResponsiveCameraView(cameraViewKey) {
+    if (isMobileDevice() && mobileCameraModalViews[cameraViewKey]) {
+        return mobileCameraModalViews[cameraViewKey];
+    }
+
+    return cameraModalViews[cameraViewKey];
+}
+
+
 // -----------------------------
 // 3D Resume / CV Envelope Mode
 // -----------------------------
@@ -732,6 +809,7 @@ function showDocumentViewer(type) {
     documentViewer.classList.add("is-open");
     documentViewer.setAttribute("aria-hidden", "false");
 
+    setCanvasPointerMode(true, false);
     document.body.style.cursor = "default";
 }
 
@@ -746,6 +824,7 @@ function hideDocumentViewer() {
     documentPreviewImage.src = "";
     documentPreviewImage.alt = "Document preview";
 
+    setCanvasPointerMode(isExtraEnvelopeMode, isExtraEnvelopeMode);
     document.body.style.cursor = "default";
 }
 
@@ -1195,13 +1274,14 @@ function showExtraEnvelopeMode() {
     if (!modals.extra) return;
     if (isModalOpen || isCameraTransitioning) return;
 
-    const view = cameraModalViews.extra;
+    const view = getResponsiveCameraView("extra");
 
     isModalOpen = true;
     isExtraEnvelopeMode = false;
 
     controls.enabled = false;
     disableSceneInteraction();
+    setCanvasPointerMode(true, true);
     saveCurrentCameraState();
 
     const enterExtraMode = () => {
@@ -1446,6 +1526,7 @@ const showModal = (modal) => {
     isModalOpen = true;
     controls.enabled = false;
     disableSceneInteraction();
+    setCanvasPointerMode(true, false);
 
     fadeInModal(modal);
 };
@@ -1461,11 +1542,12 @@ function showModalWithCamera(modal, cameraViewKey) {
         return;
     }
 
-    const view = cameraModalViews[cameraViewKey];
+    const view = getResponsiveCameraView(cameraViewKey);
 
     isModalOpen = true;
     controls.enabled = false;
     disableSceneInteraction();
+    setCanvasPointerMode(true, false);
     saveCurrentCameraState();
 
     if (!view) {
@@ -1500,6 +1582,7 @@ const hideModal = (modal) => {
                     savedCameraState.hasSavedState = false;
                     isModalOpen = false;
                     isExtraEnvelopeMode = false;
+                    setCanvasPointerMode(false, false);
 
                     controls.enabled = true;
                     enableSceneInteraction();
@@ -1508,6 +1591,7 @@ const hideModal = (modal) => {
         } else {
             isModalOpen = false;
             isExtraEnvelopeMode = false;
+            setCanvasPointerMode(false, false);
 
             controls.enabled = true;
             enableSceneInteraction();
@@ -1647,25 +1731,73 @@ Object.entries(textureMap).forEach(([key, paths]) => {
     loadedTextures.night[key] = nightTexture;
 });
 
-window.addEventListener("mousemove", (e)=>{
-    touchHappened = false;
-    pointer.x = (e.clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -(e.clientY / window.innerHeight) * 2 + 1;
-});
+// Scene pointer / mobile tap handling.
+// This replaces raw touchstart/touchend preventDefault usage so HTML menus can scroll on phones.
+const scenePointerState = {
+    downX: 0,
+    downY: 0,
+    moved: false,
+};
 
-window.addEventListener("touchstart", (e) =>{
-    if(isModalOpen) return
-    e.preventDefault()
-    pointer.x = (e.touches[0].clientX / window.innerWidth) * 2 - 1;
-    pointer.y = -(e.touches[0].clientY / window.innerHeight) * 2 + 1;
-},{passive: false});
+const SCENE_TAP_MOVE_THRESHOLD = 12;
 
-window.addEventListener("touchend", (e) =>{
-    if(isModalOpen) return
-    e.preventDefault()
+function refreshCurrentIntersectsForPointer() {
+    if (!isRaycastEnabled) return;
+
+    if (isExtraEnvelopeMode) {
+        updateExtraEnvelopeRaycaster();
+        return;
+    }
+
+    if (isModalOpen) return;
+
+    raycaster.setFromCamera(pointer, camera);
+
+    const normalRaycasterObjects = raycasterObjects.filter((object) => {
+        return !isExtraEnvelopeObject(object);
+    });
+
+    currentIntersects = raycaster.intersectObjects(normalRaycasterObjects);
+}
+
+canvas.addEventListener("pointerdown", (e) => {
+    if (isUIInteractionTarget(e)) return;
+
+    touchHappened = e.pointerType === "touch";
+
+    const nextPointer = updatePointerFromEvent(e);
+    scenePointerState.downX = nextPointer.clientX;
+    scenePointerState.downY = nextPointer.clientY;
+    scenePointerState.moved = false;
+}, { passive: true });
+
+canvas.addEventListener("pointermove", (e) => {
+    if (isUIInteractionTarget(e)) return;
+
+    const nextPointer = updatePointerFromEvent(e);
+    const dx = nextPointer.clientX - scenePointerState.downX;
+    const dy = nextPointer.clientY - scenePointerState.downY;
+
+    if (Math.sqrt(dx * dx + dy * dy) > SCENE_TAP_MOVE_THRESHOLD) {
+        scenePointerState.moved = true;
+    }
+}, { passive: true });
+
+canvas.addEventListener("pointerup", (e) => {
+    if (isUIInteractionTarget(e)) return;
+
+    updatePointerFromEvent(e);
+
+    if (scenePointerState.moved) return;
+    if (isModalOpen && !isExtraEnvelopeMode) return;
+
+    refreshCurrentIntersectsForPointer();
     handleRaycasterInteraction();
+}, { passive: true });
 
-},{passive: false});
+canvas.addEventListener("pointercancel", () => {
+    scenePointerState.moved = true;
+}, { passive: true });
 
 function setTheme(theme) {
     themeObjects.forEach((object) => {
@@ -1929,7 +2061,7 @@ function handleRaycasterInteraction() {
     }
 }
 
-window.addEventListener("click", handleRaycasterInteraction);
+// Scene clicks/taps are handled by pointerup on the canvas to avoid mobile double-fire bugs.
 
 const quickMenu = document.querySelector("#quick-menu");
 const quickMenuToggleButton = document.querySelector("#quick-menu-toggle-button");
@@ -2502,14 +2634,40 @@ controls.maxAzimuthAngle = Math.PI / 5.2;
 
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
+controls.enablePan = true;
+controls.enableZoom = true;
+controls.rotateSpeed = isMobileDevice() ? 0.55 : 1;
+controls.panSpeed = isMobileDevice() ? 0.55 : 1;
+controls.zoomSpeed = isMobileDevice() ? 0.7 : 1;
+controls.touches = {
+    ONE: THREE.TOUCH.ROTATE,
+    TWO: THREE.TOUCH.DOLLY_PAN,
+};
 
-controls.target.set(
-    0.4999349138467539,
-    1.0595564377570528,
-    1.5081876754084138
-);
+const desktopHomeCameraView = {
+    position: new THREE.Vector3(3.1614952480796013, 6.049569369916736, 18.623192008189704),
+    target: new THREE.Vector3(0.4999349138467539, 1.0595564377570528, 1.5081876754084138),
+};
 
-controls.update();
+const mobileHomeCameraView = {
+    position: new THREE.Vector3(3.2, 7.2, 23.5),
+    target: new THREE.Vector3(0.4999349138467539, 1.0595564377570528, 1.5081876754084138),
+};
+
+function applyResponsiveHomeCameraView() {
+    if (savedCameraState.hasSavedState || isModalOpen || isCameraTransitioning) return;
+
+    const view = isMobileDevice() ? mobileHomeCameraView : desktopHomeCameraView;
+
+    camera.position.copy(view.position);
+    controls.target.copy(view.target);
+    updateCameraLookAtTarget();
+    controls.update();
+}
+
+controls.target.copy(desktopHomeCameraView.target);
+
+applyResponsiveHomeCameraView();
 
 window.camera = camera;
 window.controls = controls;
@@ -2703,7 +2861,12 @@ window.addEventListener("resize",()=>{
 
     renderer.setSize(sizes.width, sizes.height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+
+    // Mobile Safari changes viewport height when the address bar shows/hides.
+    document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`);
 });
+
+document.documentElement.style.setProperty("--app-height", `${window.innerHeight}px`);
 
 function playHoverAnimation (object, isHovering){
     gsap.killTweensOf(object.scale);

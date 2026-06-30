@@ -1966,3 +1966,265 @@ body {
   opacity: 0.92;
 }
 
+/* ----------------------------- */
+/* Sooah-style Mobile Control Patch */
+/* ----------------------------- */
+
+:root {
+  --app-height: 100dvh;
+}
+
+#experience-canvas {
+  touch-action: none;
+}
+
+body.ui-open #experience-canvas {
+  pointer-events: none;
+}
+
+body.ui-open.extra-3d-mode #experience-canvas {
+  pointer-events: auto;
+}
+
+.modal,
+.document-viewer,
+.my-work-inspector,
+.quick-menu,
+.audio-menu {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.modal-card,
+.modal-content,
+.modal-scroll,
+.my-work-scroll,
+.document-preview-scroll,
+.my-work-inspector-panel {
+  touch-action: pan-y;
+}
+
+.modal-scroll,
+.my-work-scroll,
+.document-preview-scroll {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.rotate-phone-message {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .quick-menu {
+    left: max(18px, env(safe-area-inset-left));
+    bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  .audio-menu {
+    left: 76px;
+    bottom: max(18px, env(safe-area-inset-bottom));
+  }
+
+  .quick-menu-toggle-button,
+  .audio-menu-toggle-button,
+  .quick-icon-box {
+    width: 64px;
+    height: 64px;
+  }
+
+  .modal {
+    position: fixed;
+    max-width: none;
+    max-height: none;
+  }
+
+  .modal-card,
+  .pictures .modal-card,
+  .aboutme .modal-card {
+    width: min(92vw, 820px);
+    height: min(760px, calc(var(--app-height) * 0.78));
+    max-height: calc(var(--app-height) * 0.78);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-content,
+  .pictures .modal-content,
+  .aboutme .modal-content {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-header,
+  .pictures .modal-header,
+  .aboutme .modal-header {
+    flex: 0 0 auto;
+    padding-left: 54px;
+    padding-right: 18px;
+    margin-bottom: 14px;
+  }
+
+  .modal-title {
+    min-width: 0;
+    max-width: 72vw;
+    font-size: clamp(30px, 8vw, 42px);
+    padding: 10px 24px;
+  }
+
+  .modal-subtitle {
+    max-width: 72vw;
+    font-size: clamp(15px, 4.4vw, 18px);
+    line-height: 1.28;
+  }
+
+  .pictures .modal-subtitle {
+    max-height: 24dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 6px;
+  }
+
+  .modal-scroll,
+  .pictures .modal-scroll,
+  .aboutme .modal-scroll,
+  .pictures .my-work-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    padding-bottom: 34px;
+  }
+
+  .about-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .about-image {
+    min-height: 180px;
+  }
+
+  .about-image img {
+    min-height: 180px;
+  }
+
+  .my-work-gallery {
+    column-count: 2;
+    column-gap: 14px;
+  }
+
+  .my-work-tile {
+    margin-bottom: 14px;
+  }
+
+  .document-viewer-panel {
+    width: min(92vw, 760px);
+    height: min(760px, calc(var(--app-height) * 0.82));
+    max-height: calc(var(--app-height) * 0.82);
+  }
+
+  .document-preview-scroll {
+    max-height: calc(var(--app-height) * 0.58);
+  }
+
+  .audio-menu-actions {
+    max-width: calc(100vw - 38px);
+  }
+
+  .audio-control-card {
+    max-width: calc(100vw - 38px);
+  }
+
+  .audio-now-playing-card,
+  .audio-slider-card,
+  .audio-transport-card,
+  .audio-mute-card {
+    width: min(380px, calc(100vw - 38px));
+  }
+
+  .audio-volume-slider {
+    width: min(170px, 38vw);
+  }
+
+  .audio-mute-card {
+    overflow: hidden;
+  }
+
+  .audio-mute-control-icon {
+    width: 30px;
+    height: 30px;
+  }
+
+  #audio-mute-control-label {
+    font-size: clamp(22px, 7.2vw, 34px);
+    max-width: calc(100% - 48px);
+    overflow: hidden;
+    text-overflow: clip;
+  }
+}
+
+@media (pointer: coarse) and (orientation: portrait) {
+  .rotate-phone-message {
+    position: fixed;
+    top: calc(82px + env(safe-area-inset-top));
+    left: 50%;
+    z-index: 200000;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 14px;
+    border: 4px solid var(--ui-border);
+    border-radius: 16px;
+    background: var(--ui-bg);
+    color: var(--ui-border);
+    font-size: 15px;
+    font-weight: 900;
+    pointer-events: none;
+    opacity: 0.92;
+  }
+
+  .pictures .modal-card,
+  .aboutme .modal-card {
+    width: 86vw;
+    height: calc(var(--app-height) * 0.72);
+    max-height: calc(var(--app-height) * 0.72);
+    padding: 22px 16px 22px;
+    border-width: 6px;
+    border-radius: 24px;
+  }
+
+  .modal-exit-button,
+  .my-work-inspector-close,
+  .document-viewer-close-button {
+    width: 58px;
+    height: 58px;
+  }
+
+  .modal-header,
+  .pictures .modal-header,
+  .aboutme .modal-header {
+    padding-left: 52px;
+    padding-right: 8px;
+  }
+
+  .pictures .modal-subtitle {
+    max-height: 20dvh;
+  }
+
+  .my-work-gallery {
+    column-count: 1;
+  }
+
+  .audio-menu {
+    left: 92px;
+  }
+
+  .audio-menu-actions {
+    bottom: 76px;
+  }
+}
+
