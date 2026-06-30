@@ -98,7 +98,6 @@ body {
   font-family: "PortfolioFont", Inter, system-ui, sans-serif;
 }
 
-/* The action stack sits above the main toggle button */
 .quick-menu-actions {
   position: absolute;
   left: 0;
@@ -111,7 +110,6 @@ body {
   pointer-events: none;
 }
 
-/* Each button starts hidden, slightly below, like it is tucked into the toggle */
 .quick-menu-item {
   display: flex;
   align-items: center;
@@ -138,14 +136,12 @@ body {
   pointer-events: none;
 }
 
-/* When open, buttons flick upward into place */
 .quick-menu.is-open .quick-menu-item {
   opacity: 1;
   transform: translateY(0) scale(1) rotate(0deg);
   pointer-events: auto;
 }
 
-/* Opening cascade: bottom item appears first, then upward */
 .quick-menu.is-open .quick-menu-item:nth-child(5) {
   transition-delay: 0s;
 }
@@ -166,7 +162,6 @@ body {
   transition-delay: 0.18s;
 }
 
-/* Closing cascade: top item disappears first, back down into the toggle */
 .quick-menu:not(.is-open) .quick-menu-item:nth-child(1) {
   transition-delay: 0s;
 }
@@ -250,12 +245,10 @@ body {
   cursor: pointer;
 }
 
-/* Optional: give the toggle itself a little bounce when opened */
 .quick-menu.is-open .quick-menu-toggle-button {
   transform: scale(1.04);
 }
 
-/* Selected button waits while the others collapse */
 .quick-menu.is-closing-choice:not(.is-open) .quick-menu-item.is-selected {
   opacity: 1;
   transform: translateY(0) scale(1) rotate(0deg);
@@ -263,7 +256,6 @@ body {
   transition-delay: 0s;
 }
 
-/* Selected button click pop */
 .quick-menu-item.is-selected .quick-icon-box {
   animation: quickSelectedPop 0.28s ease forwards;
 }
@@ -282,7 +274,6 @@ body {
   }
 }
 
-/* After the others are gone, selected button leaves too */
 .quick-menu.is-closing-choice:not(.is-open) .quick-menu-item.is-selected.is-leaving {
   opacity: 0;
   transform: translateY(34px) scale(0.72) rotate(-8deg);
@@ -292,7 +283,6 @@ body {
   transition-delay: 0s;
 }
 
-/* Hide the separate collapse button until menu is open */
 #quick-menu-collapse-button {
   opacity: 0;
   pointer-events: none;
@@ -1234,8 +1224,6 @@ body {
 /* 3D Resume / CV Envelope Mode */
 /* ----------------------------- */
 
-/* The Extra modal becomes a transparent overlay.
-   It only exists so we can keep the close button. */
 .extra.modal {
   width: 100vw;
   height: 100vh;
@@ -1244,12 +1232,10 @@ body {
   background: transparent;
 }
 
-/* Hide old HTML envelopes if they are still in the HTML by mistake */
 .extra-envelope-wrap {
   display: none;
 }
 
-/* Only the close button should receive clicks */
 .extra.modal .modal-exit-button {
   pointer-events: auto;
 
@@ -1268,20 +1254,12 @@ body {
 /* 3D Resume / CV Focus Mode */
 /* ----------------------------- */
 
-/*
-  Change these to move the close button for the Resume/CV map view.
-
-  top:    moves it up/down
-  left:   moves it left/right
-*/
 :root {
   --extra-close-top: 120px;
   --extra-close-left: 25%;
   --extra-close-translate-x: -50%;
 }
 
-/* Extra modal is transparent.
-   It only exists so we can keep the close button while viewing the 3D envelopes. */
 .extra.modal {
   width: 100vw;
   height: 100vh;
@@ -1290,12 +1268,10 @@ body {
   background: transparent;
 }
 
-/* Hide old HTML envelopes if they are still in the HTML by mistake */
 .extra-envelope-wrap {
   display: none !important;
 }
 
-/* This is the close button for the 3D Resume/CV focused view */
 .extra.modal .modal-exit-button {
   pointer-events: auto;
 
@@ -1313,20 +1289,12 @@ body {
 /* 3D Resume / CV Focus Mode */
 /* ----------------------------- */
 
-/*
-  Move the close button for the Resume/CV map view here.
-
-  top:  moves it up/down
-  left: moves it left/right
-*/
 :root {
   --extra-close-top: 125px;
   --extra-close-left: 25%;
   --extra-close-translate-x: -50%;
 }
 
-/* Extra modal is transparent.
-   It only exists so we can keep the close button while viewing the 3D envelopes. */
 .extra.modal {
   width: 100vw;
   height: 100vh;
@@ -1335,12 +1303,10 @@ body {
   background: transparent;
 }
 
-/* Hide old HTML envelopes if they are still in the HTML */
 .extra-envelope-wrap {
   display: none !important;
 }
 
-/* Close button for the 3D Resume/CV focused view */
 .extra.modal .modal-exit-button {
   pointer-events: auto;
 
@@ -1486,7 +1452,6 @@ body {
   background: white;
 }
 
-/* Top-left X button inside the document viewer */
 .document-viewer-close-button {
   position: absolute;
   top: 14px;
@@ -1640,7 +1605,6 @@ body {
   pointer-events: auto;
 }
 
-/* Same bottom-first opening feel as the main quick menu */
 .audio-menu.is-open .audio-control-card:nth-child(5) {
   transition-delay: 0s;
 }
@@ -1881,10 +1845,7 @@ body {
 /* ----------------------------- */
 /* My Work Scroll / Cut-off Fix */
 /* ----------------------------- */
-/*
-  Keeps the My Work panel inside the viewport and lets only the collage area scroll.
-  This stops the image tiles and scrollbar from being clipped by the bottom of the screen.
-*/
+
 .pictures .modal-card {
   height: min(720px, 82vh);
   max-height: 82vh;
@@ -1927,7 +1888,6 @@ body {
   overflow: hidden;
 }
 
-/* Gives the scrollbar a little room so it does not look cut into the panel edge. */
 .pictures .my-work-scroll::-webkit-scrollbar {
   width: 10px;
 }
@@ -1951,10 +1911,6 @@ body {
 /* ----------------------------- */
 /* Audio Menu Muted Button Close Fix */
 /* ----------------------------- */
-/*
-  Fixes the "Mute All Audio" card staying visible after closing the audio menu.
-  The muted state was overriding the closed menu opacity.
-*/
 
 .audio-menu:not(.is-open) .audio-control-card,
 .audio-menu:not(.is-open) .audio-mute-card.is-muted {

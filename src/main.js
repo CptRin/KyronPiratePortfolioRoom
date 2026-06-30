@@ -20,10 +20,6 @@ const sizes = {
 // -----------------------------
 // Mobile / Touch Controls
 // -----------------------------
-// Based on the same mobile approach as sooahs-room-folio:
-// - use separate mobile camera views
-// - use touch/pointer taps instead of raw click-only scene picking
-// - keep HTML UI scrolling separate from the Three.js canvas
 const mobileMediaQuery = window.matchMedia("(pointer: coarse)");
 
 function isMobileDevice() {
@@ -76,11 +72,6 @@ function setCanvasPointerMode(isUIOpen, allowSceneTaps = false) {
 // -----------------------------
 // My Work Auto Gallery
 // -----------------------------
-// Put images in:
-// public/Interactables/images/My_Work_Images
-//
-// Vite reads these at dev-server start / build time.
-// After adding new images, refresh the dev server if they do not appear straight away.
 const MY_WORK_IMAGE_MODULES = import.meta.glob(
     "/public/Interactables/images/My_Work_Images/*.{png,jpg,jpeg,webp,gif,avif}",
     {
@@ -137,7 +128,6 @@ const MY_WORK_IMAGES = getMyWorkImages();
 // -----------------------------
 // SFX / UI Sounds
 // -----------------------------
-// Your files are in public/SFX, so Vite serves them from /SFX/...
 const SFX_CONFIG = {
     click: {
         src: "/SFX/Click_Noise.mp3",
@@ -200,7 +190,6 @@ function playSFX(name, options = {}) {
 
     if (playPromise && typeof playPromise.catch === "function") {
         playPromise.catch(() => {
-            // Browser may block audio until the user interacts with the page.
         });
     }
 }
@@ -228,9 +217,6 @@ function playSwooshSFX() {
 // -----------------------------
 // Background Music / Ambience
 // -----------------------------
-// Files are inside public/SFX/Music, so Vite serves them from /SFX/Music/...
-// Music plays one track after another, then loops back to the top.
-// Ambience loops underneath the music at a lower volume.
 const MUSIC_PLAYLIST = [
     {
         title: "Sailing On A Pirate Ship",
@@ -297,7 +283,6 @@ function playAudioElement(audio) {
 
     if (playPromise && typeof playPromise.catch === "function") {
         playPromise.catch(() => {
-            // Browser may block background audio until the user clicks/taps the page.
         });
     }
 }
@@ -335,7 +320,6 @@ function updateAudioMenuIcon() {
     button.classList.toggle("is-muted", isAudioMuted);
 }
 
-// Kept as an alias so the existing day/night theme code can still call it.
 function updateAudioMuteIcon() {
     updateAudioMenuIcon();
     updateAudioControlsState();
@@ -534,7 +518,6 @@ function toggleGlobalAudioMute() {
     const shouldMute = !isAudioMuted;
 
     if (shouldMute) {
-        // Play the click before muting, so the button still feels responsive.
         playClickSFX();
         setGlobalAudioMuted(true);
         return;
@@ -581,11 +564,6 @@ setupSFX();
 window.addEventListener("pointerdown", unlockSceneAudio, { once: true, passive: true });
 window.addEventListener("keydown", unlockSceneAudio, { once: true });
 
-// Handy console controls:
-// window.setSFXEnabled(false)
-// window.setSFXEnabled(true)
-// window.setSFXVolume("click", 0.3)
-// window.playSFX("swoosh")
 window.playSFX = playSFX;
 window.setSFXEnabled = (value) => {
     isSFXEnabled = Boolean(value);
@@ -600,14 +578,6 @@ window.setSFXVolume = (name, volume) => {
     });
 };
 
-// Background audio console controls:
-// window.setGlobalAudioMuted(true)
-// window.setGlobalAudioMuted(false)
-// window.setMusicVolume(0.15)
-// window.setAmbienceVolume(0.05)
-// window.skipMusicTrack()
-// window.previousMusicTrack()
-// window.toggleMusicPaused()
 window.setGlobalAudioMuted = setGlobalAudioMuted;
 window.setMusicVolume = setMusicVolume;
 window.setAmbienceVolume = setAmbienceVolume;
@@ -699,14 +669,8 @@ const myWorkInspectorCloseButton = document.querySelector("#my-work-inspector-cl
 let isDocumentViewerOpen = false;
 let isMyWorkInspectorOpen = false;
 
-// These are starter camera views. Tune them in the browser console with window.logCameraView().
-// The "pictures" view is your map / My Work view.
+
 const cameraModalViews = {
-    // pictures: {
-    //     position: new THREE.Vector3(0.15, 4.2, 5.8),
-    //     target: new THREE.Vector3(0.15, 1.45, 1.15),
-    //     duration: 1.15,
-    // },
     aboutme: {
         position: new THREE.Vector3(0.9890881984291968, 3.719253856043575, 5.802515354486388),
         target: new THREE.Vector3(4.325945135570619, 2.5121377566096768, 1.915473975754205),
@@ -750,15 +714,6 @@ let currentExtraEnvelopeId = null;
 
 const extraEnvelopeHighlightMeshes = [];
 
-/*
-  Page slide settings.
-
-  The code below will slide the page in the direction it already sits
-  away from the envelope. This usually gives the cleanest "paper pulls
-  further out of envelope" movement.
-
-  Increase or decrease this number to control slide distance.
-*/
 const EXTRA_ENVELOPE_PAGE_SLIDE_DISTANCE = 0.15;
 
 const EXTRA_ENVELOPE_HOVER_SCALE = 1.18;
@@ -1114,14 +1069,6 @@ function prepareExtraEnvelopeObject(object) {
     object.userData.extraEnvelopeInitialScale = new THREE.Vector3().copy(object.scale);
     object.userData.extraEnvelopeInitialRotation = new THREE.Euler().copy(object.rotation);
 
-    /*
-      Important:
-      Do NOT push these into raycasterObjects here.
-
-      These objects are stored in extraEnvelopePairs instead.
-      That means they only become hoverable/clickable while
-      isExtraEnvelopeMode is active.
-    */
 
     console.log("Prepared 3D envelope object:", object.name, "type:", type);
 }
@@ -1182,11 +1129,6 @@ function getExtraEnvelopePageSlideOffset(type) {
         return new THREE.Vector3(0, 0, 0);
     }
 
-    /*
-      This finds the direction from envelope -> page.
-      So instead of sliding upward in world space,
-      the paper slides further in the direction it already sticks out.
-    */
     const slideDirection = new THREE.Vector3().subVectors(pageStart, envelopeStart);
 
     if (slideDirection.length() < 0.0001) {
@@ -1534,9 +1476,6 @@ const showModal = (modal) => {
 function showModalWithCamera(modal, cameraViewKey) {
     if (!modal) return;
     if (isModalOpen || isCameraTransitioning) return;
-
-    // Extra now uses the physical 3D Resume / CV envelopes,
-    // not the old HTML envelope menu.
     if (cameraViewKey === "extra") {
         showExtraEnvelopeMode();
         return;
@@ -1637,11 +1576,7 @@ const nameAnimationObjects = [];
 const daggerAnimationObjects = [];
 let hasPlayedIntroAnimation = false;
 
-// Leaf sway
 const leafSwayObjects = [];
-
-// Change these if your leaf mesh has a different name.
-// Example: if your Blender mesh is named "Corner_Greens", add "Corner_Greens".
 const LEAF_SWAY_NAME_KEYWORDS = [
     "Leaf",
     "Leaves",
@@ -1731,8 +1666,6 @@ Object.entries(textureMap).forEach(([key, paths]) => {
     loadedTextures.night[key] = nightTexture;
 });
 
-// Scene pointer / mobile tap handling.
-// This replaces raw touchstart/touchend preventDefault usage so HTML menus can scroll on phones.
 const scenePointerState = {
     downX: 0,
     downY: 0,
@@ -1904,14 +1837,12 @@ function toggleDayNight(object) {
     const nextTheme = currentTheme === "day" ? "night" : "day";
     const spinTarget = atlasObject || object;
 
-    // Change UI colors and icons immediately.
     setUITheme(nextTheme);
 
     if (spinTarget) {
         spinAtlas(spinTarget);
     }
 
-    // Start the actual room transition immediately.
     fadeTheme(nextTheme, 0.85);
     godRays.setMode(nextTheme);
 
@@ -2003,11 +1934,6 @@ function handleRaycasterInteraction() {
 
     const object = currentIntersects[0].object;
 
-    /*
-      Extra focused mode:
-      Only Resume / CV physical models work here.
-      The map behind them cannot be clicked again.
-    */
     if (isExtraEnvelopeMode) {
         const envelopeType = getExtraEnvelopeType(object);
 
@@ -2023,10 +1949,6 @@ function handleRaycasterInteraction() {
         return;
     }
 
-    /*
-      Physical Resume / CV envelopes are intentionally ignored here.
-      They only work after entering Extra envelope mode.
-    */
     if (isExtraEnvelopeObject(object)) {
         return;
     }
@@ -2060,8 +1982,6 @@ function handleRaycasterInteraction() {
         showExtraEnvelopeMode();
     }
 }
-
-// Scene clicks/taps are handled by pointerup on the canvas to avoid mobile double-fire bugs.
 
 const quickMenu = document.querySelector("#quick-menu");
 const quickMenuToggleButton = document.querySelector("#quick-menu-toggle-button");
@@ -2309,13 +2229,10 @@ function collapseQuickMenuWithSelectedDelay(selectedButton, action) {
     selectedButton.classList.add("is-selected");
     quickMenu.classList.add("is-closing-choice");
 
-    // This starts collapsing all the other buttons.
     setQuickMenuOpen(false);
 
-    // How long the selected button waits while the others collapse.
     const otherButtonsCollapseDelay = 280;
 
-    // How long the selected button takes to leave after the others collapse.
     const selectedButtonLeaveDuration = 260;
 
     window.setTimeout(() => {
@@ -2329,7 +2246,6 @@ function collapseQuickMenuWithSelectedDelay(selectedButton, action) {
 
         isQuickMenuActionPlaying = false;
 
-        // Some actions, like Day Cycle, are already run immediately on click.
         if (action) {
             runQuickMenuAction(action);
         }
@@ -2348,7 +2264,6 @@ document.querySelectorAll(".quick-menu-item").forEach((button) => {
         const action = button.dataset.uiAction;
         playClickSFX();
 
-        // Day Cycle should happen immediately, not after the menu collapse delay.
         if (action === "dayCycle") {
             if (!isThemeChanging) {
                 toggleDayNight(atlasObject);
@@ -2378,7 +2293,6 @@ document
 
 setUITheme(currentTheme);
 
-// Leaf sway helper functions
 function shouldApplyLeafSway(object) {
     const objectName = object.name.toLowerCase();
 
@@ -2395,7 +2309,6 @@ function prepareLeafSway(object) {
 
     object.userData.hasLeafSway = true;
 
-    // Clone the material so only the leaves get the shader modification.
     if (Array.isArray(object.material)) {
         object.material = object.material.map(material => material.clone());
     } else {
@@ -2418,21 +2331,14 @@ function prepareLeafSway(object) {
         const uniforms = {
             uLeafTime: { value: 0 },
 
-            // Main controls:
-            // Lower strength = more subtle movement.
             uLeafStrength: { value: 0.035 },
 
-            // Lower frequency = larger smoother waves.
-            // Higher frequency = tighter ripples.
             uLeafFrequency: { value: 2.8 },
 
-            // Lower speed = slower movement.
             uLeafSpeed: { value: 0.55 },
 
-            // Random phase so multiple leaf meshes would not move identically.
             uLeafPhase: { value: Math.random() * Math.PI * 2 },
 
-            // Used to make the top/outer parts move more than the lower parts.
             uLeafMinY: { value: minY },
             uLeafMaxY: { value: maxY },
         };
@@ -2494,8 +2400,6 @@ function prepareLeafSway(object) {
     });
 
     leafSwayObjects.push(object);
-
-    // console.log("Leaf sway applied to:", object.name);
 }
 
 function updateLeafSway(elapsedTime) {
@@ -2575,8 +2479,6 @@ loader.load("/models/CaptainRoomExportPortfolio-v1.glb", (glb)=>{
                     });   
                 }
             });
-
-            // Apply GPU leaf sway after the final material has been assigned.
             prepareLeafSway(child);
             prepareExtraEnvelopeObject(child);
         }
@@ -2584,22 +2486,16 @@ loader.load("/models/CaptainRoomExportPortfolio-v1.glb", (glb)=>{
 
     scene.add(glb.scene);
     playIntroAnimations();
-
-    // Debug helpers.
-    // In the browser console you can run:
-    // roomModel.traverse((child) => { if (child.isMesh) console.log(child.name); });
     window.roomModel = glb.scene;
     window.leafSwayObjects = leafSwayObjects;
 });
 
-//Lock Oribital Controls
 const scene = new THREE.Scene();
 
 const godRays = createGodRays();
 godRays.setMode(currentTheme);
 scene.add(godRays.group);
 
-// Debug helpers for browser console
 window.godRays = godRays;
 window.THREE = THREE;
 window.scene = scene;
@@ -2621,7 +2517,6 @@ const renderer = new THREE.WebGLRenderer({canvas:canvas, antialias: true});
 renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
-//Orbital Controls
 const controls = new OrbitControls( camera, renderer.domElement );
 
 controls.minDistance = 5;
@@ -2880,11 +2775,6 @@ function playHoverAnimation (object, isHovering){
             duration: 0.4,
             ease: "bounce.out(1)",
         });
-        // gsap.to(object.rotation, {
-        //     x: object.userData.initialRotation.x * Math.PI / 8,
-        //     duration: 0.5,
-        //     ease: "bounce.out(1.8)",
-        // });
     }else{
         gsap.to(object.scale, {
             x: object.userData.initialScale.x,
@@ -2893,11 +2783,6 @@ function playHoverAnimation (object, isHovering){
             duration: 0.3,
             ease: "bounce.out(1.8)",
         });
-        // gsap.to(object.rotation, {
-        //     x: object.userData.initialRotation.x,
-        //     duration: 0.3,
-        //     ease: "bounce.out(1.8)",
-        // });
     }
 }
 

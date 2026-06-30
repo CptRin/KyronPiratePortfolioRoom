@@ -209,7 +209,6 @@ export function createGodRays() {
       group.visible = true;
       material.uniforms.uColor.value.set("#fff2c4");
 
-      // Lower value = weaker rays
       material.uniforms.uOpacity.value = 0.2;
     }
 
@@ -217,7 +216,6 @@ export function createGodRays() {
       group.visible = true;
       material.uniforms.uColor.value.set("#b8ccff");
 
-      // Very subtle moonlight rays
       material.uniforms.uOpacity.value = 0.218;
     }
 
