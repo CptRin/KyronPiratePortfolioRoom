@@ -1,0 +1,113 @@
+/* Uses the same font and theme tokens as the existing portfolio menus. */
+#loading-screen {
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    font-family: "PortfolioFont", Inter, system-ui, sans-serif;
+    padding: 24px;
+    min-height: 100svh;
+
+    .loading-center { max-width: 640px; }
+    h1 { font-size: clamp(32px, 5vw, 56px); margin: 0 0 14px; }
+    #loading-status { font-size: clamp(16px, 2vw, 22px); line-height: 1.5; }
+    button { font-family: inherit; color: inherit; cursor: pointer; }
+    // Match the quick-menu buttons: same border, corners, rotation and highlight.
+    .loading-enter {
+        background: var(--ui-bg);
+        color: var(--ui-border);
+        border: 6px solid var(--ui-border);
+        border-radius: 16px;
+        padding: 14px 38px;
+        font-size: clamp(34px, 5vw, 52px);
+        transition:
+            transform 0.16s ease,
+            filter 0.16s ease,
+            background 0.16s ease;
+        &:hover {
+            transform: scale(var(--quick-hover-scale)) rotate(var(--quick-hover-rotation));
+            filter: brightness(1.2);
+        }
+    }
+    button:focus:not(:focus-visible) { outline: none; }
+    button:focus-visible { outline: 3px solid currentColor; outline-offset: 7px; }
+    .loading-footer {
+        position: absolute;
+        bottom: max(30px, env(safe-area-inset-bottom));
+        left: 20px;
+        right: 20px;
+        font-size: clamp(15px, 2vw, 22px);
+        line-height: 1.5;
+    }
+#loading-silent {
+    display: block;
+    width: fit-content;
+    margin: 0 auto 20px;
+    padding: 10px;
+
+    border: none;
+    background: transparent;
+    box-shadow: none;
+
+    font-family: inherit;
+    font-size: 18px;
+    color: var(--ui-text);
+    text-decoration: underline;
+    cursor: pointer;
+
+    transform-origin: center;
+
+    transition:
+        transform 0.16s ease,
+        filter 0.16s ease;
+
+    &:hover {
+        transform:
+            scale(var(--quick-hover-scale))
+            rotate(var(--quick-hover-rotation));
+
+        filter: brightness(1.2);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        transition: none;
+    }
+}
+    .loading-touch-hint { display: none; }
+    .loading-sr-only {
+        position: absolute; width: 1px; height: 1px; padding: 0;
+        overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+    }
+    @media (pointer: coarse) {
+        .loading-touch-hint { display: block; }
+        .loading-desktop-hint { display: none; }
+    }
+    @media (max-height: 450px) {
+        .loading-center { transform: translateY(-35px); }
+        .loading-footer { bottom: 12px; }
+        #loading-silent { margin-bottom: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .loading-enter { transition: none; }
+    }
+}
+
+/* Transparent holes in the pink canvas reveal the live Three.js scene. */
+#loading-screen .loading-ink-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+#loading-screen.is-dissolving {
+    cursor: default;
+    .loading-center, .loading-footer {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 180ms ease;
+    }
+}
+
+.symbol-font {
+    font-family: Arial, Helvetica, sans-serif;
+    font-weight: normal;
+}

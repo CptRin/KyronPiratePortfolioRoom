@@ -1,0 +1,115 @@
+/* Subtle motion for closely spaced music rows. */
+.audio-menu.is-open .audio-control-card {
+    transform-origin: center;
+}
+@media (hover: hover) {
+    .audio-menu.is-open .audio-control-card:hover {
+        transform: translateY(0) scale(1.01) rotate(-1deg);
+        filter: brightness(1.12);
+        transition-delay: 0s;
+    }
+    .audio-menu.is-open .audio-control-card:nth-child(even):hover {
+        transform: translateY(0) scale(1.01) rotate(1deg);
+    }
+    .audio-menu.is-open .audio-menu-toggle-button:hover {
+        transform: scale(var(--quick-hover-scale)) rotate(var(--quick-hover-rotation));
+        filter: brightness(1.2);
+    }
+}
+/* Full-size masks prevent the Resume/CV dissolve from tiling. */
+.document-viewer, .my-work-inspector, .external-link-dialog {
+    mask-repeat: no-repeat;
+    -webkit-mask-repeat: no-repeat;
+    mask-size: 100% 100%;
+    -webkit-mask-size: 100% 100%;
+    mask-position: center;
+    -webkit-mask-position: center;
+}
+.external-link-dialog {
+    position: fixed;
+    inset: 0;
+    margin: auto;
+    width: min(620px, calc(100vw - 32px));
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    padding: clamp(22px, 4vw, 38px);
+    border: 6px solid var(--ui-border);
+    border-radius: 24px;
+    background: var(--ui-bg);
+    color: var(--ui-text);
+    font-family: "PortfolioFont", Inter, system-ui, sans-serif;
+    text-align: center;
+    line-height: 1.5;
+    &::backdrop { background: rgba(0, 0, 0, 0.55); }
+    h2 { margin: 0 0 18px; font-size: clamp(26px, 4vw, 36px); }
+    p { margin: 0 0 18px; font-size: 19px; }
+    .external-link-destination {
+        font-family: Arial, Helvetica, sans-serif;
+        font-size: 16px;
+        overflow-wrap: anywhere;
+        padding: 14px;
+        border: 2px solid var(--ui-border);
+        border-radius: 12px;
+        user-select: text;
+    }
+    .external-link-actions {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 18px;
+        padding: 8px;
+    }
+    button, .external-link-confirm {
+        display: inline-block;
+        padding: 10px 16px;
+        border: 4px solid var(--ui-border);
+        border-radius: 16px;
+        background: var(--ui-bg);
+        color: var(--ui-border);
+        font: inherit;
+        font-size: 20px;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 0.16s ease, filter 0.16s ease;
+        &:hover { transform: scale(1.05) rotate(-3deg); filter: brightness(1.2); }
+    }
+    :focus-visible { outline: 3px solid currentColor; outline-offset: 5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .audio-menu.is-open .audio-control-card:hover,
+    .audio-menu.is-open .audio-control-card:nth-child(even):hover {
+        transform: none;
+    }
+    .external-link-dialog button, .external-link-dialog .external-link-confirm {
+        transition: none;
+        &:hover { transform: none; }
+    }
+}
+
+/* Keep About Me's scroll area inside its viewport-limited card. */
+.aboutme .modal-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.aboutme .modal-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+}
+.aboutme .modal-header {
+    flex: 0 0 auto;
+}
+.aboutme .modal-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    min-width: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior-y: contain;
+}
+.aboutme .about-layout > * {
+    min-width: 0;
+}

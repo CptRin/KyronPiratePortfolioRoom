@@ -7,6 +7,91 @@ import gsap from "gsap"
 import { createGodRays } from "./GodRays.js";
 import { inject } from "@vercel/analytics";
 
+import { createLoadingScreen } from "./loadingScreen.js";
+import { createPerformanceWarning } from "./performanceWarning.js";
+import { createExternalLinkConfirmation, setupAudioButtonFeedback } from "./uiEnhancements.js";
+
+let isExternalLinkConfirmationOpen = false;
+let controlsBeforeExternalLink = false;
+const externalLinks = createExternalLinkConfirmation({
+    onOpen: () => {
+        isExternalLinkConfirmationOpen = true;
+        controlsBeforeExternalLink = controls.enabled;
+        controls.enabled = false;
+        clearRaycasterState();
+    },
+    onClose: () => {
+        isExternalLinkConfirmationOpen = false;
+        controls.enabled = controlsBeforeExternalLink;
+    },
+    onClick: () => playClickSFX(),
+    onReveal: dialog => revealModalWithNoise(dialog, 700),
+    onHide: (dialog, complete) => hideModalWithNoise(dialog, 450, complete),
+});
+setupAudioButtonFeedback();
+
+let isPerformanceWarningOpen = false;
+let controlsBeforePerformanceWarning = true;
+const performanceWarning = createPerformanceWarning({
+    onOpen: () => {
+        isPerformanceWarningOpen = true;
+        controlsBeforePerformanceWarning = controls.enabled;
+        controls.enabled = false;
+        clearRaycasterState();
+    },
+    onClose: () => {
+        isPerformanceWarningOpen = false;
+        controls.enabled = controlsBeforePerformanceWarning;
+    },
+    onClick: () => playClickSFX(),
+});
+// Run this in the browser console after entering to preview the prompt.
+window.previewPerformanceWarning = () => performanceWarning.preview();
+
+let isEnteringScene = false;
+const loadingScreen = createLoadingScreen({
+    // Override only Enter's hover volume; other hover sounds keep their settings.
+    onEnterHover: () => playSFX("hover", { volume: 0.2 }),
+    onEnter: (muted) => {
+        isEnteringScene = true;
+        setGlobalAudioMuted(muted);
+        if (!muted) {
+            unlockSceneAudio();
+            playClickSFX();
+        }
+    },
+    onRevealed: () => {
+        isEnteringScene = false;
+        controls.enabled = true;
+        isRaycastEnabled = true;
+        playIntroAnimations();
+        // Longest possible intro tween plus one second of settling time.
+        const introMs = Math.max(
+            2300,
+            1050 + Math.max(0, daggerAnimationObjects.length - 1) * 100,
+            1000 + Math.max(0, nameAnimationObjects.length - 1) * 80
+        );
+        performanceWarning.start({ warmupMs: introMs + 1000 });
+    }
+});
+const loadingManager = new THREE.LoadingManager();
+loadingManager.onError = (url) => {
+    console.error("Could not load scene asset:", url);
+    loadingScreen.fail();
+};
+loadingManager.onLoad = async () => {
+    try {
+        loadingScreen.status("Preparing the room...");
+        await document.fonts.ready;
+        await renderer.compileAsync(scene, camera);
+        renderer.render(scene, camera);
+        loadingScreen.ready();
+    } catch (error) {
+        console.error("Could not prepare the room:", error);
+        loadingScreen.fail();
+    }
+};
+
 inject();
 
 
@@ -55,7 +140,7 @@ function isUIInteractionTarget(event) {
     if (!event.target || typeof event.target.closest !== "function") return false;
 
     return Boolean(event.target.closest(
-        ".modal, .document-viewer, .my-work-inspector, .quick-menu, .audio-menu, .rotate-phone-message"
+        ".external-link-dialog, .performance-warning, #loading-screen, .modal, .document-viewer, .my-work-inspector, .quick-menu, .audio-menu, .rotate-phone-message"
     ));
 }
 
@@ -561,8 +646,7 @@ function unlockSFX() {
 
 setupSFX();
 
-window.addEventListener("pointerdown", unlockSceneAudio, { once: true, passive: true });
-window.addEventListener("keydown", unlockSceneAudio, { once: true });
+// Audio is unlocked by the loading screen Enter button.
 
 window.playSFX = playSFX;
 window.setSFXEnabled = (value) => {
@@ -644,7 +728,7 @@ Object.values(modals).forEach((modal) => {
 });
 
 let isModalOpen = false;
-let isRaycastEnabled = true;
+let isRaycastEnabled = false;
 let isCameraTransitioning = false;
 
 const savedCameraState = {
@@ -667,7 +751,10 @@ const myWorkInspectorTitle = document.querySelector("#my-work-inspector-title");
 const myWorkInspectorCloseButton = document.querySelector("#my-work-inspector-close");
 
 let isDocumentViewerOpen = false;
+let isDocumentViewerClosing = false;
+const documentCloseCallbacks = [];
 let isMyWorkInspectorOpen = false;
+let isMyWorkInspectorClosing = false;
 
 
 const cameraModalViews = {
@@ -749,6 +836,7 @@ function showDocumentViewer(type) {
     if (!pdfUrl || !previewUrl) return;
     if (!documentViewer || !documentPreviewImage) return;
 
+    if (isDocumentViewerClosing) return;
     isDocumentViewerOpen = true;
 
     clearExtraEnvelopeHover();
@@ -763,24 +851,39 @@ function showDocumentViewer(type) {
 
     documentViewer.classList.add("is-open");
     documentViewer.setAttribute("aria-hidden", "false");
+    documentViewer.style.pointerEvents = "auto";
+    revealModalWithNoise(documentViewer, 2550);
 
     setCanvasPointerMode(true, false);
     document.body.style.cursor = "default";
 }
 
-function hideDocumentViewer() {
-    if (!documentViewer || !documentPreviewImage) return;
-
-    isDocumentViewerOpen = false;
-
-    documentViewer.classList.remove("is-open");
-    documentViewer.setAttribute("aria-hidden", "true");
-
-    documentPreviewImage.src = "";
-    documentPreviewImage.alt = "Document preview";
-
-    setCanvasPointerMode(isExtraEnvelopeMode, isExtraEnvelopeMode);
-    document.body.style.cursor = "default";
+function hideDocumentViewer(onComplete = null) {
+    if (typeof onComplete === "function") documentCloseCallbacks.push(onComplete);
+    const complete = () => {
+        const callbacks = documentCloseCallbacks.splice(0);
+        callbacks.forEach(callback => callback());
+    };
+    if (!documentViewer || !documentPreviewImage || !isDocumentViewerOpen) {
+        complete();
+        return;
+    }
+    if (isDocumentViewerClosing) return;
+    isDocumentViewerClosing = true;
+    documentViewer.style.pointerEvents = "none";
+    // Keep the image and is-open state until the dissolve finishes.
+    hideModalWithNoise(documentViewer, 450, () => {
+        isDocumentViewerOpen = false;
+        isDocumentViewerClosing = false;
+        documentViewer.classList.remove("is-open");
+        documentViewer.setAttribute("aria-hidden", "true");
+        documentViewer.style.pointerEvents = "";
+        documentPreviewImage.src = "";
+        documentPreviewImage.alt = "Document preview";
+        setCanvasPointerMode(isExtraEnvelopeMode, isExtraEnvelopeMode);
+        document.body.style.cursor = "default";
+        complete();
+    });
 }
 
 function openMyWorkInspector(index) {
@@ -789,6 +892,7 @@ function openMyWorkInspector(index) {
     const image = MY_WORK_IMAGES[index];
     if (!image) return;
 
+    if (isMyWorkInspectorClosing) return;
     isMyWorkInspectorOpen = true;
 
     myWorkInspectorImage.src = image.src;
@@ -800,24 +904,26 @@ function openMyWorkInspector(index) {
 
     myWorkInspector.classList.add("is-open");
     myWorkInspector.setAttribute("aria-hidden", "false");
+    myWorkInspector.style.pointerEvents = "auto";
+    revealModalWithNoise(myWorkInspector, 700);
 
     document.body.style.cursor = "default";
 }
 
 function closeMyWorkInspector() {
-    if (!myWorkInspector || !myWorkInspectorImage) return;
-
-    isMyWorkInspectorOpen = false;
-
-    myWorkInspector.classList.remove("is-open");
-    myWorkInspector.setAttribute("aria-hidden", "true");
-
-    myWorkInspectorImage.src = "";
-    myWorkInspectorImage.alt = "Selected work preview";
-
-    if (myWorkInspectorTitle) {
-        myWorkInspectorTitle.textContent = "";
-    }
+    if (!myWorkInspector || !myWorkInspectorImage || !isMyWorkInspectorOpen || isMyWorkInspectorClosing) return;
+    isMyWorkInspectorClosing = true;
+    myWorkInspector.style.pointerEvents = "none";
+    hideModalWithNoise(myWorkInspector, 450, () => {
+        isMyWorkInspectorOpen = false;
+        isMyWorkInspectorClosing = false;
+        myWorkInspector.classList.remove("is-open");
+        myWorkInspector.setAttribute("aria-hidden", "true");
+        myWorkInspector.style.pointerEvents = "";
+        myWorkInspectorImage.src = "";
+        myWorkInspectorImage.alt = "Selected work preview";
+        if (myWorkInspectorTitle) myWorkInspectorTitle.textContent = "";
+    });
 }
 
 function buildMyWorkGallery() {
@@ -885,7 +991,7 @@ if (myWorkInspectorCloseButton) {
 }
 
 window.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && isMyWorkInspectorOpen) {
+    if (e.key === "Escape" && isMyWorkInspectorOpen && !isExternalLinkConfirmationOpen && !isPerformanceWarningOpen) {
         closeMyWorkInspector();
     }
 });
@@ -1232,9 +1338,7 @@ function showExtraEnvelopeMode() {
 
         clearRaycasterState();
 
-        modals.extra.style.display = "block";
-        modals.extra.style.opacity = "1";
-        clearModalNoiseMask(modals.extra);
+        revealModalWithNoise(modals.extra, 2550);
 
         console.log("3D Resume / CV envelope mode active");
     };
@@ -1404,58 +1508,47 @@ function clearModalNoiseMask(modal) {
     modal.style.maskImage = "none";
 }
 
-function revealModalWithNoise(modal, duration = 700) {
-    modal.style.display = "block";
+// Only one noise animation may own a panel at a time. Closing during
+// opening continues from its current reveal amount instead of flashing.
+const modalNoiseAnimations = new WeakMap();
+const modalNoiseProgress = new WeakMap();
+
+function animateModalNoise(modal, target, duration, onComplete = null) {
+    cancelAnimationFrame(modalNoiseAnimations.get(modal));
+    const from = modalNoiseProgress.get(modal) ?? (target === 1 ? 0 : 1);
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const display = modal.classList.contains("my-work-inspector") ? "flex" : "block";
+    const finish = () => {
+        modalNoiseAnimations.delete(modal);
+        modalNoiseProgress.set(modal, target);
+        clearModalNoiseMask(modal);
+        modal.style.opacity = target === 1 ? "1" : "0";
+        modal.style.display = target === 1 ? display : "none";
+        onComplete?.();
+    };
+    modal.style.display = display;
     modal.style.opacity = "1";
-
+    if (reducedMotion) { finish(); return; }
     const startTime = performance.now();
+    const animate = now => {
+        const progress = Math.min((now - startTime) / Math.max(1, duration), 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const amount = from + (target - from) * eased;
+        modalNoiseProgress.set(modal, amount);
+        applyModalNoiseMask(modal, amount);
+        if (progress < 1) modalNoiseAnimations.set(modal, requestAnimationFrame(animate));
+        else finish();
+    };
+    applyModalNoiseMask(modal, from);
+    modalNoiseAnimations.set(modal, requestAnimationFrame(animate));
+}
 
-    function animate(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-
-        const easedProgress = 1 - Math.pow(1 - progress, 3);
-
-        applyModalNoiseMask(modal, easedProgress);
-
-        if (progress < 1) {
-            requestAnimationFrame(animate);
-        } else {
-            clearModalNoiseMask(modal);
-        }
-    }
-
-    applyModalNoiseMask(modal, 0);
-    requestAnimationFrame(animate);
+function revealModalWithNoise(modal, duration = 700) {
+    animateModalNoise(modal, 1, duration);
 }
 
 function hideModalWithNoise(modal, duration = 450, onComplete = null) {
-    const startTime = performance.now();
-
-    function animate(now) {
-        const elapsed = now - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-
-        const easedProgress = 1 - Math.pow(1 - progress, 3);
-        const revealProgress = 1 - easedProgress;
-
-        applyModalNoiseMask(modal, revealProgress);
-
-        if (progress < 1) {
-            requestAnimationFrame(animate);
-        } else {
-            clearModalNoiseMask(modal);
-            modal.style.opacity = "0";
-            modal.style.display = "none";
-
-            if (onComplete) {
-                onComplete();
-            }
-        }
-    }
-
-    applyModalNoiseMask(modal, 1);
-    requestAnimationFrame(animate);
+    animateModalNoise(modal, 0, duration, onComplete);
 }
 
 function fadeInModal(modal) {
@@ -1499,8 +1592,10 @@ function showModalWithCamera(modal, cameraViewKey) {
     });
 }
 
+const closingModals = new WeakSet();
 const hideModal = (modal) => {
-    if (!modal) return;
+    if (!modal || closingModals.has(modal)) return;
+    closingModals.add(modal);
 
     if (modal.classList.contains("pictures")) {
         closeMyWorkInspector();
@@ -1512,6 +1607,7 @@ const hideModal = (modal) => {
     controls.enabled = false;
 
     function finishModalClose() {
+        closingModals.delete(modal);
         if (savedCameraState.hasSavedState) {
             animateCameraTo(
                 savedCameraState.position,
@@ -1538,16 +1634,13 @@ const hideModal = (modal) => {
     }
 
     if (isClosingExtraMode) {
-        hideDocumentViewer();
-
-        isExtraEnvelopeMode = false;
-        clearExtraEnvelopeHover();
-
-        modal.style.opacity = "0";
-        modal.style.display = "none";
-        clearModalNoiseMask(modal);
-
-        finishModalClose();
+        // Close the document first, then its envelope-mode UI.
+        hideDocumentViewer(() => {
+            isExtraEnvelopeMode = false;
+            clearExtraEnvelopeHover();
+            setCanvasPointerMode(true, false);
+            hideModalWithNoise(modal, 450, finishModalClose);
+        });
         return;
     }
 
@@ -1596,18 +1689,18 @@ const socialLinks = {
 }
 
 //Loaders
-const textureLoader = new THREE.TextureLoader();
+const textureLoader = new THREE.TextureLoader(loadingManager);
 
 //Model Loader
-const dracoLoader = new DRACOLoader();
+const dracoLoader = new DRACOLoader(loadingManager);
 dracoLoader.setDecoderPath("/draco/");
 
-const loader = new GLTFLoader();
+const loader = new GLTFLoader(loadingManager);
 loader.setDRACOLoader(dracoLoader);
 
 //Cube Loader
 
-const enviromentMap = new THREE.CubeTextureLoader()
+const enviromentMap = new THREE.CubeTextureLoader(loadingManager)
     .setPath("/textures/SkyBox/")
     .load( [
         'px.webp',
@@ -1963,11 +2056,7 @@ function handleRaycasterInteraction() {
         if (object.name.includes(key)) {
             playClickSFX();
 
-            const newWindow = window.open();
-            newWindow.opener = null;
-            newWindow.location = url;
-            newWindow.target = "_blank";
-            newWindow.rel = "noopener noreferrer";
+            externalLinks.confirm(url, { target: "_blank" });
         }
     });
 
@@ -2485,7 +2574,7 @@ loader.load("/models/CaptainRoomExportPortfolio-v1.glb", (glb)=>{
     });
 
     scene.add(glb.scene);
-    playIntroAnimations();
+    // The intro starts when the visitor enters.
     window.roomModel = glb.scene;
     window.leafSwayObjects = leafSwayObjects;
 });
@@ -2518,6 +2607,7 @@ renderer.setSize(sizes.width, sizes.height);
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
 const controls = new OrbitControls( camera, renderer.domElement );
+controls.enabled = false;
 
 controls.minDistance = 5;
 controls.maxDistance = 20;
@@ -2804,7 +2894,9 @@ const render = () => {
   updateLeafSway(elapsedTime);
 
 // Raycaster
-if (isRaycastEnabled && isExtraEnvelopeMode) {
+if (isPerformanceWarningOpen || isExternalLinkConfirmationOpen) {
+    clearRaycasterState();
+} else if (isRaycastEnabled && isExtraEnvelopeMode) {
     updateExtraEnvelopeRaycaster();
 } else if (isRaycastEnabled && !isModalOpen) {
     raycaster.setFromCamera(pointer, camera);
@@ -2870,6 +2962,11 @@ if (isRaycastEnabled && isExtraEnvelopeMode) {
 }
 
   renderer.render( scene, camera );
+
+  performanceWarning.sample(performance.now(), {
+      paused: isEnteringScene || isExternalLinkConfirmationOpen || isModalOpen || isCameraTransitioning || isExtraEnvelopeMode ||
+          document.body.classList.contains("ui-open")
+  });
 
   window.requestAnimationFrame(render);
 };

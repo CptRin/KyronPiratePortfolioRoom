@@ -7,7 +7,39 @@
     <title>Kyron Porter Portfolio</title>
   </head>
 
-  <body>
+  <body class="is-loading">
+    <!-- Loading screen: visible before the JavaScript bundle starts. -->
+    <style>
+      body.is-loading { background: #f2b1aa; }
+      #loading-screen { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; background: #f2b1aa; color: #8f2928; text-align: center; }
+      #loading-screen [hidden] { display: none !important; }
+      body.is-loading > :not(#loading-screen):not(script):not(style) { visibility: hidden; }
+    </style>
+    <section id="loading-screen" role="dialog" aria-modal="true" aria-label="Welcome to Kyron Porter's portfolio">
+      <div class="loading-center">
+        <h1 id="loading-title">Loading...</h1>
+        <p id="loading-status" role="status">Preparing the captain's room</p>
+        <button id="loading-enter" class="loading-enter" type="button" hidden>Enter!</button>
+        <button id="loading-retry" class="loading-enter" type="button" hidden>Try again</button>
+      </div>
+      <footer class="loading-footer">
+        <button id="loading-silent" type="button" hidden>Enter without sound</button>
+          <p class="loading-desktop-hint">
+            ㅤLeft click to rotateㅤ
+            <span class="symbol-font">●</span>
+            ㅤRight click to panㅤ
+            <span class="symbol-font">●</span>
+            ㅤScroll to zoomㅤ
+          </p>
+
+          <p class="loading-touch-hint">
+            Drag to rotate
+            <span class="symbol-font">●</span>
+            Use two fingers to pan and zoom
+          </p>
+      </footer>
+      <noscript>Please enable JavaScript to explore this portfolio.</noscript>
+    </section>
     <div id="root"></div>
 
     <div class="rotate-phone-message" aria-hidden="true">Rotate phone for best experience</div>
